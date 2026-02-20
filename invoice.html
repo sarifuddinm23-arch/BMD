@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMD - Invoice Management</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root { --primary: #f39c12; --dark: #1a1a1a; --bg: #f4f4f9; }
+        body { font-family: sans-serif; margin: 0; background: var(--bg); transition: 0.3s; }
+        
+        .top-bar { background: var(--dark); padding: 10px; display: flex; justify-content: space-between; align-items: center; color: white; position: sticky; top: 0; z-index: 100; }
+        .mode-btn { background: var(--primary); border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        .container { max-width: 1000px; margin: 20px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .desktop-mode { max-width: 95% !important; }
+
+        /* সার্চ সেকশন */
+        .search-section { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .search-bar { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; min-width: 200px; }
+        
+        /* টেবিল স্টাইল */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; color: var(--dark); }
+        
+        .btn-print { background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        .btn-print:hover { background: #2980b9; }
+
+        /* ইনভয়েস ফরম্যাট (যা PDF হবে) */
+        #invoice-template { display: none; padding: 40px; background: white; color: black; }
+        .inv-header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <span onclick="window.location.href='index.html'" style="cursor:pointer;">⬅️ BMD INVOICE & BILLS</span>
+    <button class="mode-btn" onclick="toggleView()">🖥️ Toggle View</button>
+</div>
+
+<div class="container" id="mainContainer">
+    <div class="search-section">
+        <input type="text" id="searchInput" class="search-bar" placeholder="Search by Party Name or Product..." onkeyup="filterInvoices()">
+        <input type="date" id="dateFilter" class="search-bar" onchange="filterInvoices()">
+    </div>
+
+    <div class="table-container">
+        <table id="invoiceTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Party Name</th>
+                    <th>Product</th>
+                    <th>Qty (L)</th>
+                    <th>Net Amount</th>
+                    <th>Due</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="invoiceData">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="invoice-template">
+    <div class="inv-header">
+        <h2>BMD BUSINESS MANAGER</h2>
+        <p>Oil Dealership Invoice</p>
+    </div>
+    <div id="inv-content" style="margin-top: 20px;">
+        </div>
+    <div style="margin-top: 50px; display: flex; justify-content: space-between;">
+        <p>________________<br>Customer Sig</p>
+        <p>________________<br>Authorized Sig</p>
+    </div>
+</div>
+
+<script>
+    const _supabaseUrl = 'https://rounqtjnvgntetliprqy.supabase.co';
+    const _supabaseKey = 'sb_publishable_n4AovVgcPqcrBr1xqG19QA_H8KxB9tq';
+    const supabase = supabase.createClient(_supabaseUrl, _supabaseKey);
+
+    function toggleView() {
+        document.getElementById('mainContainer').classList.toggle('desktop-mode');
+    }
+
+    // ডাটাবেস থেকে ইনভয়েস লিস্ট আনা
+    async function loadInvoices() {
+        const { data, error } = await supabase
+            .from('transactions')
+            .select(`*, parties(first_name, last_name, mobile)`)
+            .order('created_at', { ascending: false });
+
+        if (data) {
+            const tbody = document.getElementById('invoiceData');
+            tbody.innerHTML = '';
+            data.forEach(inv => {
+                const date = new Date(inv.created_at).toLocaleDateString();
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${date}</td>
+                        <td>${inv.parties?.first_name} ${inv.parties?.last_name || ''}</td>
+                        <td>${inv.product}</td>
+                        <td>${inv.qty}</td>
+                        <td>₹ ${inv.net_total}</td>
+                        <td style="color:red">₹ ${inv.due_amount}</td>
+                        <td>
+                            <button class="btn-print" onclick="generatePDF('${inv.id}')">PDF / Print</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+    }
+
+    // সার্চ ফিল্টার
+    function filterInvoices() {
+        const input = document.getElementById('searchInput').value.toUpperCase();
+        const dateInput = document.getElementById('dateFilter').value;
+        const table = document.getElementById('invoiceTable');
+        const tr = table.getElementsByTagName('tr');
+
+        for (let i = 1; i < tr.length; i++) {
+            let tdName = tr[i].getElementsByTagName('td')[1];
+            let tdDate = tr[i].getElementsByTagName('td')[0];
+            if (tdName) {
+                let nameMatch = tdName.textContent.toUpperCase().indexOf(input) > -1;
+                // তারিখ ফরম্যাট চেক করার জন্য সিম্পল লজিক
+                tr[i].style.display = nameMatch ? "" : "none";
+            }
+        }
+    }
+
+    // PDF জেনারেট এবং ডাউনলোড
+    async function generatePDF(id) {
+        const { data, error } = await supabase
+            .from('transactions')
+            .select(`*, parties(*)`)
+            .eq('id', id)
+            .single();
+
+        if (data) {
+            const content = `
+                <table style="width:100%; border:none;">
+                    <tr><td><strong>Invoice No:</strong> #${data.id}</td><td style="text-align:right"><strong>Date:</strong> ${new Date(data.created_at).toLocaleDateString()}</td></tr>
+                    <tr><td><strong>Customer:</strong> ${data.parties.first_name}</td><td></td></tr>
+                    <tr><td><strong>Mobile:</strong> ${data.parties.mobile}</td><td></td></tr>
+                </table>
+                <hr>
+                <table style="width:100%; margin-top:20px; border-collapse: collapse;" border="1">
+                    <tr style="background:#eee"><th>Description</th><th>Qty</th><th>Rate</th><th>Total</th></tr>
+                    <tr>
+                        <td>${data.product} (${data.type.toUpperCase()})</td>
+                        <td>${data.qty} L</td>
+                        <td>₹ ${data.rate}</td>
+                        <td>₹ ${data.net_total}</td>
+                    </tr>
+                </table>
+                <div style="text-align:right; margin-top:20px;">
+                    <p>Total Amount: ₹ ${data.net_total}</p>
+                    <p>Paid Amount: ₹ ${data.paid_amount}</p>
+                    <h3 style="color:red">Balance Due: ₹ ${data.due_amount}</h3>
+                </div>
+            `;
+            
+            const element = document.getElementById('invoice-template');
+            document.getElementById('inv-content').innerHTML = content;
+            element.style.display = 'block';
+
+            const opt = {
+                margin: 0.5,
+                filename: `Invoice_${data.id}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                element.style.display = 'none';
+            });
+        }
+    }
+
+    loadInvoices();
+</script>
+
+</body>
+</html>
