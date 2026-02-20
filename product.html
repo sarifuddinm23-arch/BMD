@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMD - Sell & Purchase</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary: #f39c12; --dark: #1a1a1a; --bg: #f4f4f9; }
+        body { font-family: sans-serif; margin: 0; background: var(--bg); transition: 0.3s; }
+        .top-bar { background: var(--dark); padding: 10px; display: flex; justify-content: space-between; align-items: center; color: white; }
+        .mode-btn { background: var(--primary); border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        
+        .container { max-width: 500px; margin: 20px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .desktop-mode { max-width: 90% !important; }
+
+        label { display: block; margin-top: 10px; font-weight: bold; font-size: 14px; }
+        input, select { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+        input:focus { border-color: var(--primary); outline: none; background: #fffdf0; }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 15px; }
+        .add-btn { background: #27ae60; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; white-space: nowrap; }
+        .save-btn { background: var(--dark); color: var(--primary); width: 100%; padding: 15px; border: none; border-radius: 5px; font-size: 18px; font-weight: bold; margin-top: 20px; cursor: pointer; }
+
+        /* Modal / New Window Style */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 100; }
+        .modal-content { background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; }
+
+        .calc-box { background: #f9f9f9; padding: 10px; border-radius: 5px; margin-top: 15px; border: 1px dashed #f39c12; }
+    </style>
+</head>
+<body id="mainBody">
+
+<div class="top-bar">
+    <span>SELL & PURCHASE</span>
+    <button class="mode-btn" onclick="toggleView()">🖥️ Toggle View</button>
+</div>
+
+<div class="container" id="formContainer">
+    <form id="mainEntryForm">
+        <label>Seller / Party Name</label>
+        <div style="display: flex; gap: 5px;">
+            <select id="partySelect" required>
+                <option value="">Select Party</option>
+            </select>
+            <button type="button" class="add-btn" onclick="openPartyModal()">+ Add Party</button>
+        </div>
+
+        <label>Transaction Type</label>
+        <select id="transType" required>
+            <option value="sell">Sell Product (বিক্রি)</option>
+            <option value="receive">Receive Product (ক্রয়)</option>
+        </select>
+
+        <label>Product</label>
+        <select id="productSelect" required>
+            <option value="Petrol">Petrol</option>
+            <option value="Diesel">Diesel</option>
+            <option value="Mobil">Mobil</option>
+        </select>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+                <label>Qty (Litre)</label>
+                <input type="number" id="qty" step="0.01" placeholder="0.00" required oninput="calculateTotal()">
+            </div>
+            <div>
+                <label>Price /Ltr</label>
+                <input type="number" id="rate" step="0.01" placeholder="₹ 0.00" required oninput="calculateTotal()">
+            </div>
+        </div>
+
+        <div class="calc-box">
+            <p>Net Price: <b>₹ <span id="netPrice">0.00</span></b></p>
+            <label>Payment Received/Paid</label>
+            <input type="number" id="payment" placeholder="₹ Enter Amount" oninput="calculateTotal()">
+            <p style="color: red;">Balance/Due: <b>₹ <span id="duePrice">0.00</span></b></p>
+        </div>
+
+        <button type="button" class="save-btn" onclick="submitToSupabase()">SAVE & GENERATE INVOICE (Enter)</button>
+    </form>
+</div>
+
+<div class="modal" id="partyModal">
+    <div class="modal-content">
+        <h3>Add New Party</h3>
+        <input type="text" id="p_fname" placeholder="First Name" required>
+        <input type="text" id="p_lname" placeholder="Last Name">
+        <input type="number" id="p_mobile" placeholder="Mobile Number" required>
+        <input type="text" id="p_address" placeholder="Address">
+        <input type="text" id="p_state" placeholder="State" value="West Bengal">
+        <div class="btn-group">
+            <button class="add-btn" onclick="saveParty()">Save Party</button>
+            <button class="add-btn" style="background:#e74c3c" onclick="closePartyModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Supabase Config
+    const _supabaseUrl = 'https://rounqtjnvgntetliprqy.supabase.co';
+    const _supabaseKey = 'sb_publishable_n4AovVgcPqcrBr1xqG19QA_H8KxB9tq';
+    const supabase = supabase.createClient(_supabaseUrl, _supabaseKey);
+
+    // Toggle View
+    function toggleView() {
+        document.getElementById('formContainer').classList.toggle('desktop-mode');
+    }
+
+    // Modal Controls
+    function openPartyModal() { document.getElementById('partyModal').style.display = 'flex'; }
+    function closePartyModal() { document.getElementById('partyModal').style.display = 'none'; }
+
+    // Calculations
+    function calculateTotal() {
+        const qty = parseFloat(document.getElementById('qty').value) || 0;
+        const rate = parseFloat(document.getElementById('rate').value) || 0;
+        const payment = parseFloat(document.getElementById('payment').value) || 0;
+        
+        const net = qty * rate;
+        const due = net - payment;
+        
+        document.getElementById('netPrice').innerText = net.toFixed(2);
+        document.getElementById('duePrice').innerText = due.toFixed(2);
+    }
+
+    // Keyboard Entry Support (Enter key to Save)
+    document.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter' && !document.getElementById('partyModal').offsetParent) {
+            submitToSupabase();
+        }
+    });
+
+    // Save Party to Supabase
+    async function saveParty() {
+        const partyData = {
+            first_name: document.getElementById('p_fname').value,
+            last_name: document.getElementById('p_lname').value,
+            mobile: document.getElementById('p_mobile').value,
+            address: document.getElementById('p_address').value,
+            state: document.getElementById('p_state').value
+        };
+
+        const { data, error } = await supabase.from('parties').insert([partyData]);
+        if (error) alert("Error: " + error.message);
+        else {
+            alert("Party Saved!");
+            closePartyModal();
+            loadParties(); // Refresh list
+        }
+    }
+
+    // Submit Sales/Purchase Data
+    async function submitToSupabase() {
+        const entry = {
+            party_id: document.getElementById('partySelect').value,
+            type: document.getElementById('transType').value,
+            product: document.getElementById('productSelect').value,
+            qty: document.getElementById('qty').value,
+            rate: document.getElementById('rate').value,
+            net_total: document.getElementById('netPrice').innerText,
+            paid_amount: document.getElementById('payment').value,
+            due_amount: document.getElementById('duePrice').innerText,
+            created_at: new Date()
+        };
+
+        const { data, error } = await supabase.from('transactions').insert([entry]);
+        if (error) alert("Error: " + error.message);
+        else {
+            alert("Data Saved & Invoice Generated in Database!");
+            document.getElementById('mainEntryForm').reset();
+            window.location.href = "index.html"; // Back to Home
+        }
+    }
+
+    // Load Parties on Start
+    async function loadParties() {
+        const { data, error } = await supabase.from('parties').select('*');
+        if (data) {
+            const select = document.getElementById('partySelect');
+            select.innerHTML = '<option value="">Select Party</option>';
+            data.forEach(p => {
+                select.innerHTML += `<option value="${p.id}">${p.first_name} ${p.last_name}</option>`;
+            });
+        }
+    }
+
+    loadParties();
+</script>
+</body>
+</html>
