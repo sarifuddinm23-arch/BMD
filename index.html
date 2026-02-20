@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMD - Business Management Data</title>
+    <style>
+        /* মূল স্টাইল */
+        :root {
+            --primary: #f39c12; /* তেলের রঙের সাথে মিল রেখে */
+            --dark: #2c3e50;
+            --bg: #f0f2f5;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            background-color: var(--bg);
+            transition: all 0.3s ease;
+        }
+
+        /* মোড কন্ট্রোলার স্টাইল */
+        .mode-switcher {
+            background: var(--dark);
+            padding: 10px;
+            display: flex;
+            justify-content: flex-end;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .mode-btn {
+            background: var(--primary);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* ডেস্কটপ মোড সিমুলেশন */
+        .desktop-view {
+            max-width: 1200px !important;
+            margin: 20px auto !important;
+            border: 2px solid #ddd;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        }
+
+        /* হেডার */
+        header {
+            background: white;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 3px solid var(--primary);
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--dark);
+            margin: 0;
+        }
+
+        /* কন্টেইনার */
+        .container {
+            padding: 20px;
+        }
+
+        /* কার্ড সেকশন */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .card h3 { font-size: 14px; color: #667; margin-bottom: 5px; }
+        .card p { font-size: 20px; font-weight: bold; color: var(--dark); margin: 0; }
+
+        /* ফর্ম সেকশন */
+        .form-box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        .form-box h2 { font-size: 18px; margin-top: 0; color: var(--dark); }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        .submit-btn {
+            background: var(--dark);
+            color: white;
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .submit-btn:hover { background: #1a252f; }
+
+        /* ডাটা টেবিল */
+        .table-container {
+            overflow-x: auto;
+            background: white;
+            border-radius: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 400px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th { background: #f8f9fa; color: var(--dark); }
+
+    </style>
+</head>
+<body id="mainBody">
+
+    <div class="mode-switcher">
+        <button class="mode-btn" onclick="toggleMode()">
+            <span id="modeIcon">🖥️</span> <span id="modeText">Desktop Mode</span>
+        </button>
+    </div>
+
+    <div id="contentWrapper">
+        <header>
+            <p class="logo-text">BMD - তৈল ডিলার ম্যানেজমেন্ট</p>
+            <small style="color: #888;">বিজনেস ম্যানেজমেন্ট ডাটা সিস্টেম</small>
+        </header>
+
+        <div class="container">
+            <div class="grid">
+                <div class="card" style="border-top: 4px solid #27ae60;">
+                    <h3>আজকের ক্যাশ</h3>
+                    <p>৳ <span id="todayCash">0</span></p>
+                </div>
+                <div class="card" style="border-top: 4px solid #e67e22;">
+                    <h3>মোট স্টক</h3>
+                    <p><span id="totalStock">5000</span> L</p>
+                </div>
+            </div>
+
+            <div class="form-box">
+                <h2>নতুন বিক্রয় এন্ট্রি</h2>
+                <form id="bmdForm">
+                    <select id="oilType">
+                        <option value="ডিজেল">ডিজেল (Diesel)</option>
+                        <option value="অকটেন">অকটেন (Octane)</option>
+                        <option value="মবিল">মবিল (Lubricant)</option>
+                    </select>
+                    <input type="number" id="qty" placeholder="পরিমাণ (লিটার)" required>
+                    <input type="number" id="price" placeholder="মোট টাকা (৳)" required>
+                    <button type="button" class="submit-btn" onclick="saveData()">ডাটা সেভ করুন</button>
+                </form>
+            </div>
+
+            <div class="table-container">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>টাইম</th>
+                            <th>আইটেম</th>
+                            <th>লিটার</th>
+                            <th>টাকা</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // মোড পরিবর্তন করার ফাংশন
+        function toggleMode() {
+            const wrapper = document.getElementById('contentWrapper');
+            const modeText = document.getElementById('modeText');
+            const modeIcon = document.getElementById('modeIcon');
+
+            if (wrapper.classList.contains('desktop-view')) {
+                wrapper.classList.remove('desktop-view');
+                modeText.innerText = "Desktop Mode";
+                modeIcon.innerText = "🖥️";
+                document.body.style.backgroundColor = "#f0f2f5";
+            } else {
+                wrapper.classList.add('desktop-view');
+                modeText.innerText = "Mobile Mode";
+                modeIcon.innerText = "📱";
+                document.body.style.backgroundColor = "#333";
+            }
+        }
+
+        // ডাটা সেভ করার ফাংশন
+        let totalCash = 0;
+        function saveData() {
+            const type = document.getElementById('oilType').value;
+            const qty = document.getElementById('qty').value;
+            const price = document.getElementById('price').value;
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            if(qty && price) {
+                const table = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
+                const row = table.insertRow(0); // নতুন ডাটা উপরে দেখাবে
+                
+                row.innerHTML = `
+                    <td>${time}</td>
+                    <td><b>${type}</b></td>
+                    <td>${qty} L</td>
+                    <td>৳ ${price}</td>
+                `;
+
+                // ক্যাশ আপডেট
+                totalCash += parseInt(price);
+                document.getElementById('todayCash').innerText = totalCash.toLocaleString();
+
+                // ফর্ম ক্লিয়ার
+                document.getElementById('bmdForm').reset();
+            } else {
+                alert("দয়া করে সব ঘর পূরণ করুন!");
+            }
+        }
+    </script>
+</body>
+</html>
