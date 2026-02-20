@@ -8,50 +8,58 @@
     <style>
         :root { --primary: #f39c12; --dark: #1a1a1a; --bg: #f4f4f9; }
         body { font-family: sans-serif; margin: 0; background: var(--bg); }
-        .top-bar { background: var(--dark); padding: 10px; display: flex; justify-content: space-between; align-items: center; color: white; }
-        .container { max-width: 900px; margin: 20px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .top-bar { background: var(--dark); padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white; }
+        .container { max-width: 900px; margin: 20px auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #555; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #444; }
+        input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
+        input:focus { border-color: var(--primary); outline: none; background: #fffdf5; }
         
-        .btn-save { background: #27ae60; color: white; border: none; padding: 12px 25px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; }
-        .btn-update { background: #2980b9; display: none; } /* এডিট মোডে দেখাবে */
+        .btn-save { background: #27ae60; color: white; border: none; padding: 14px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; transition: 0.3s; }
+        .btn-save:hover { background: #219150; }
+        .btn-save:disabled { background: #95a5a6; cursor: not-allowed; }
+        
+        .btn-update { background: #2980b9; display: none; }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 30px; font-size: 14px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        .table-container { overflow-x: auto; margin-top: 30px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { border: 1px solid #eee; padding: 12px; text-align: left; }
         th { background: var(--dark); color: white; }
-        tr:nth-child(even) { background: #f9f9f9; }
+        tr:nth-child(even) { background: #fafafa; }
 
-        .action-btns { display: flex; gap: 5px; }
-        .edit-btn { background: #f39c12; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; }
-        .del-btn { background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; }
+        .action-btns { display: flex; gap: 8px; }
+        .edit-btn { background: #f39c12; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        .del-btn { background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        
+        #statusIndicator { font-size: 12px; padding: 4px 8px; border-radius: 20px; background: #27ae60; }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <span onclick="window.location.href='index.html'" style="cursor:pointer;">⬅️ BMD SELLER MANAGEMENT</span>
-    <div id="status" style="font-size: 10px; color: #27ae60;">Connected</div>
+    <span onclick="window.location.href='index.html'" style="cursor:pointer; font-weight: bold;">⬅️ BMD SELLER MANAGEMENT</span>
+    <div id="statusIndicator">System Online</div>
 </div>
 
 <div class="container">
-    <h3 id="formTitle">Add New Seller / Party</h3>
+    <h3 id="formTitle" style="margin-top: 0; color: var(--dark);">Add New Seller / Party</h3>
+    
     <form id="sellerForm">
         <input type="hidden" id="sellerId">
         
         <div class="form-grid">
             <div>
-                <label>Full Name</label>
+                <label>Full Name *</label>
                 <input type="text" id="fullName" placeholder="Enter Name" required>
             </div>
             <div>
-                <label>Mobile Number</label>
+                <label>Mobile Number *</label>
                 <input type="number" id="mobile" placeholder="9876543210" required>
             </div>
             <div>
                 <label>Address</label>
-                <input type="text" id="address" placeholder="Vill, PO, PS">
+                <input type="text" id="address" placeholder="Village, PO, PS">
             </div>
             <div>
                 <label>PIN Code</label>
@@ -63,7 +71,7 @@
             </div>
             <div>
                 <label>Set Special Price (Optional)</label>
-                <input type="number" id="setPrice" placeholder="₹ 0.00">
+                <input type="number" id="setPrice" placeholder="₹ 0.00" step="0.01">
             </div>
         </div>
         
@@ -71,10 +79,8 @@
         <button type="button" id="updateBtn" class="btn-save btn-update" onclick="updateSeller()">UPDATE DATA</button>
     </form>
 
-    <hr style="margin-top: 40px; opacity: 0.3;">
-
-    <h3>Registered Sellers List</h3>
-    <div style="overflow-x: auto;">
+    <div class="table-container">
+        <h3 style="color: var(--dark);">Registered Sellers List</h3>
         <table id="sellerTable">
             <thead>
                 <tr>
@@ -86,80 +92,108 @@
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="sellerListBody">
                 </tbody>
         </table>
     </div>
 </div>
 
 <script>
-    // Supabase Configuration
+    // আপনার সুপাবেস কনফিগারেশন
     const _supabaseUrl = 'https://rounqtjnvgntetliprqy.supabase.co';
     const _supabaseKey = 'sb_publishable_n4AovVgcPqcrBr1xqG19QA_H8KxB9tq';
     const supabase = supabase.createClient(_supabaseUrl, _supabaseKey);
 
     // ১. সেলার সেভ করার ফাংশন
     async function saveSeller() {
+        const btn = document.getElementById('submitBtn');
         const sellerData = {
-            first_name: document.getElementById('fullName').value, // আপনার SQL অনুযায়ী কলাম নাম
-            mobile: document.getElementById('mobile').value,
-            address: document.getElementById('address').value,
+            first_name: document.getElementById('fullName').value.trim(),
+            mobile: document.getElementById('mobile').value.trim(),
+            address: document.getElementById('address').value.trim(),
             pin: document.getElementById('pin').value,
             state: document.getElementById('state').value,
-            // আপনি যদি SQL-এ set_price কলাম না রেখে থাকেন তবে এটি বাদ দিতে পারেন
+            set_price: parseFloat(document.getElementById('setPrice').value) || 0
         };
 
-        if(!sellerData.first_name || !sellerData.mobile) return alert("Name & Mobile is required!");
-
-        const { error } = await supabase.from('parties').insert([sellerData]);
-        if (error) alert("Error: " + error.message);
-        else {
-            alert("Seller Added Successfully!");
-            document.getElementById('sellerForm').reset();
-            fetchSellers();
-        }
-    }
-
-    // ২. ডাটাবেস থেকে সেলার লিস্ট নিয়ে আসা
-    async function fetchSellers() {
-        const tbody = document.querySelector('#sellerTable tbody');
-        tbody.innerHTML = '<tr><td colspan="6">Loading...</td></tr>';
-
-        const { data, error } = await supabase.from('parties').select('*').order('created_at', { ascending: false });
-
-        if (error) {
-            console.error(error);
+        if(!sellerData.first_name || !sellerData.mobile) {
+            alert("দয়া করে নাম এবং মোবাইল নম্বর লিখুন।");
             return;
         }
 
-        tbody.innerHTML = '';
-        data.forEach(seller => {
-            tbody.innerHTML += `
-                <tr>
-                    <td>${seller.first_name}</td>
-                    <td>${seller.mobile}</td>
-                    <td>${seller.address || '-'}</td>
-                    <td>${seller.state} (${seller.pin || '-'})</td>
-                    <td>₹ ${seller.set_price || 'Market'}</td>
-                    <td class="action-btns">
-                        <button class="edit-btn" onclick="editSeller('${seller.id}')">Edit</button>
-                        <button class="del-btn" onclick="deleteSeller('${seller.id}')">Del</button>
-                    </td>
-                </tr>
-            `;
-        });
+        // বাটন লোডিং স্টেট
+        btn.disabled = true;
+        btn.innerText = "Saving Data... Please Wait";
+
+        try {
+            const { data, error } = await supabase
+                .from('parties')
+                .insert([sellerData]);
+
+            if (error) throw error;
+
+            alert("Seller Added Successfully! ✅");
+            document.getElementById('sellerForm').reset();
+            document.getElementById('state').value = "West Bengal"; // রিসেট করার পর ডিফল্ট স্টেট
+            fetchSellers();
+        } catch (err) {
+            console.error(err);
+            alert("ভুল হয়েছে: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "SAVE SELLER DATA";
+        }
     }
 
-    // ৩. ডিলিট ফাংশন
+    // ২. ডাটাবেস থেকে লিস্ট লোড করা
+    async function fetchSellers() {
+        const tbody = document.getElementById('sellerListBody');
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Loading Sellers...</td></tr>';
+
+        try {
+            const { data, error } = await supabase
+                .from('parties')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            tbody.innerHTML = '';
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No sellers found.</td></tr>';
+                return;
+            }
+
+            data.forEach(seller => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${seller.first_name}</strong></td>
+                        <td>${seller.mobile}</td>
+                        <td>${seller.address || '-'}</td>
+                        <td>${seller.state} (${seller.pin || '-'})</td>
+                        <td>₹ ${seller.set_price ? seller.set_price.toFixed(2) : '0.00'}</td>
+                        <td class="action-btns">
+                            <button class="edit-btn" onclick="editSeller('${seller.id}')">Edit</button>
+                            <button class="del-btn" onclick="deleteSeller('${seller.id}')">Del</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center;">Error: ${err.message}</td></tr>`;
+        }
+    }
+
+    // ৩. সেলার ডিলিট করা
     async function deleteSeller(id) {
-        if (confirm("Are you sure you want to delete this seller?")) {
+        if (confirm("আপনি কি নিশ্চিতভাবে এই সেলারকে ডিলিট করতে চান?")) {
             const { error } = await supabase.from('parties').delete().eq('id', id);
-            if (error) alert(error.message);
+            if (error) alert("ডিলিট করা সম্ভব হয়নি: " + error.message);
             else fetchSellers();
         }
     }
 
-    // ৪. এডিট মোড চালু করা
+    // ৪. এডিট মোড (ডাটা ফর্মে আনা)
     async function editSeller(id) {
         const { data, error } = await supabase.from('parties').select('*').eq('id', id).single();
         if (data) {
@@ -169,44 +203,59 @@
             document.getElementById('address').value = data.address;
             document.getElementById('pin').value = data.pin;
             document.getElementById('state').value = data.state;
+            document.getElementById('setPrice').value = data.set_price;
             
-            // বাটন পরিবর্তন
+            // বাটন স্যুইচ
             document.getElementById('submitBtn').style.display = 'none';
             document.getElementById('updateBtn').style.display = 'block';
             document.getElementById('formTitle').innerText = "Edit Seller Details";
-            window.scrollTo(0, 0);
+            document.getElementById('formTitle').style.color = "#2980b9";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }
 
     // ৫. ডাটা আপডেট করা
     async function updateSeller() {
         const id = document.getElementById('sellerId').value;
+        const btn = document.getElementById('updateBtn');
+        
         const updatedData = {
             first_name: document.getElementById('fullName').value,
             mobile: document.getElementById('mobile').value,
             address: document.getElementById('address').value,
             pin: document.getElementById('pin').value,
-            state: document.getElementById('state').value
+            state: document.getElementById('state').value,
+            set_price: parseFloat(document.getElementById('setPrice').value) || 0
         };
 
+        btn.disabled = true;
+        btn.innerText = "Updating...";
+
         const { error } = await supabase.from('parties').update(updatedData).eq('id', id);
-        if (error) alert(error.message);
-        else {
-            alert("Updated Successfully!");
+        
+        if (error) {
+            alert("আপডেট হয়নি: " + error.message);
+        } else {
+            alert("Seller Data Updated! ✅");
             cancelEdit();
             fetchSellers();
         }
+        btn.disabled = false;
+        btn.innerText = "UPDATE DATA";
     }
 
+    // এডিট মোড বাতিল করা
     function cancelEdit() {
         document.getElementById('sellerForm').reset();
+        document.getElementById('state').value = "West Bengal";
         document.getElementById('submitBtn').style.display = 'block';
         document.getElementById('updateBtn').style.display = 'none';
         document.getElementById('formTitle').innerText = "Add New Seller / Party";
+        document.getElementById('formTitle').style.color = "var(--dark)";
     }
 
-    // পেজ লোড হলে ডাটা দেখাবে
-    fetchSellers();
+    // পেজ লোড হলে লিস্ট দেখাবে
+    window.onload = fetchSellers;
 </script>
 
 </body>
