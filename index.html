@@ -3,255 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BMD - Business Management Data</title>
+    <title>BMD - Business Manager</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* মূল স্টাইল */
         :root {
-            --primary: #f39c12; /* তেলের রঙের সাথে মিল রেখে */
-            --dark: #2c3e50;
-            --bg: #f0f2f5;
+            --primary: #f39c12;
+            --dark: #1a1a1a;
+            --bg: #f4f4f9;
         }
 
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
             margin: 0;
             background-color: var(--bg);
-            transition: all 0.3s ease;
-        }
-
-        /* মোড কন্ট্রোলার স্টাইল */
-        .mode-switcher {
-            background: var(--dark);
-            padding: 10px;
             display: flex;
-            justify-content: flex-end;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-
-        .mode-btn {
-            background: var(--primary);
-            border: none;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: bold;
-            display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 5px;
         }
 
-        /* ডেস্কটপ মোড সিমুলেশন */
-        .desktop-view {
-            max-width: 1200px !important;
-            margin: 20px auto !important;
-            border: 2px solid #ddd;
-            box-shadow: 0 0 20px rgba(0,0,0,0.2);
-        }
-
-        /* হেডার */
-        header {
-            background: white;
-            padding: 20px;
-            text-align: center;
-            border-bottom: 3px solid var(--primary);
-        }
-
-        .logo-text {
-            font-size: 24px;
-            font-weight: bold;
-            color: var(--dark);
-            margin: 0;
-        }
-
-        /* কন্টেইনার */
-        .container {
-            padding: 20px;
-        }
-
-        /* কার্ড সেকশন */
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-
-        .card {
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            text-align: center;
-        }
-
-        .card h3 { font-size: 14px; color: #667; margin-bottom: 5px; }
-        .card p { font-size: 20px; font-weight: bold; color: var(--dark); margin: 0; }
-
-        /* ফর্ম সেকশন */
-        .form-box {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 25px;
-        }
-
-        .form-box h2 { font-size: 18px; margin-top: 0; color: var(--dark); }
-
-        input, select {
+        .top-bar {
             width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 8px;
+            background: var(--dark);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             box-sizing: border-box;
         }
 
-        .submit-btn {
-            background: var(--dark);
+        .mode-btn {
+            background: #444;
             color: white;
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
+            border: 1px solid #666;
+            padding: 5px 12px;
+            border-radius: 5px;
             cursor: pointer;
+            font-size: 12px;
         }
 
-        .submit-btn:hover { background: #1a252f; }
-
-        /* ডাটা টেবিল */
-        .table-container {
-            overflow-x: auto;
-            background: white;
-            border-radius: 12px;
-        }
-
-        table {
+        .phone-frame {
             width: 100%;
-            border-collapse: collapse;
-            min-width: 400px;
+            max-width: 400px;
+            background: white;
+            min-height: 95vh;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            margin-top: 10px;
+            border-radius: 10px;
+            overflow: hidden;
+            transition: max-width 0.3s ease;
         }
 
-        th, td {
-            padding: 12px;
-            text-align: left;
+        .desktop-mode { max-width: 1000px !important; }
+
+        header {
+            text-align: center;
+            padding: 20px;
             border-bottom: 1px solid #eee;
         }
 
-        th { background: #f8f9fa; color: var(--dark); }
+        header h1 {
+            font-size: 20px;
+            margin: 0;
+            text-transform: uppercase;
+            color: #333;
+        }
 
+        .live-data-container {
+            border-top: 3px solid #ff8c00;
+            margin: 10px;
+            padding-top: 15px;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            padding: 15px;
+        }
+
+        .box {
+            border: 2px solid #000;
+            padding: 15px;
+            text-align: center;
+            border-radius: 8px;
+            text-decoration: none;
+            color: black;
+            font-weight: bold;
+            font-size: 13px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 90px;
+            transition: transform 0.2s;
+            background: #fff;
+        }
+
+        .box:hover { background: #fafafa; }
+
+        /* Color Codes from your Image */
+        .box-black { border-color: #000; }
+        .box-blue { border-color: #0000FF; color: #0000FF; }
+        .box-red { border-color: #FF0000; color: #FF0000; }
+        .box-green { border-color: #008000; color: #008000; }
+        .box-orange { border-color: #FFA500; color: #FFA500; }
+
+        .count-val {
+            display: block;
+            font-size: 18px;
+            margin-top: 5px;
+            color: #d35400;
+        }
+
+        .footer-info {
+            text-align: center;
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 30px;
+            padding: 20px;
+        }
     </style>
 </head>
-<body id="mainBody">
+<body id="bodyTag">
 
-    <div class="mode-switcher">
-        <button class="mode-btn" onclick="toggleMode()">
-            <span id="modeIcon">🖥️</span> <span id="modeText">Desktop Mode</span>
-        </button>
+    <div class="top-bar">
+        <span style="color: white; font-weight: bold;">BMD Manager (India)</span>
+        <button class="mode-btn" onclick="toggleView()">🖥️ Desktop/Mobile</button>
     </div>
 
-    <div id="contentWrapper">
+    <div class="phone-frame" id="mainFrame">
         <header>
-            <p class="logo-text">BMD - তৈল ডিলার ম্যানেজমেন্ট</p>
-            <small style="color: #888;">বিজনেস ম্যানেজমেন্ট ডাটা সিস্টেম</small>
+            <h1>business manager</h1>
         </header>
 
-        <div class="container">
-            <div class="grid">
-                <div class="card" style="border-top: 4px solid #27ae60;">
-                    <h3>আজকের ক্যাশ</h3>
-                    <p>৳ <span id="todayCash">0</span></p>
-                </div>
-                <div class="card" style="border-top: 4px solid #e67e22;">
-                    <h3>মোট স্টক</h3>
-                    <p><span id="totalStock">5000</span> L</p>
-                </div>
-            </div>
+        <div class="live-data-container">
+            <p style="text-align: center; color: #ff8c00; font-weight: bold; font-size: 11px; margin-top: -25px; background: white; width: fit-content; margin-left: auto; margin-right: auto; padding: 0 10px;">
+                LIVE DATA COUNT VIEW
+            </p>
 
-            <div class="form-box">
-                <h2>নতুন বিক্রয় এন্ট্রি</h2>
-                <form id="bmdForm">
-                    <select id="oilType">
-                        <option value="ডিজেল">ডিজেল (Diesel)</option>
-                        <option value="অকটেন">অকটেন (Octane)</option>
-                        <option value="মবিল">মবিল (Lubricant)</option>
-                    </select>
-                    <input type="number" id="qty" placeholder="পরিমাণ (লিটার)" required>
-                    <input type="number" id="price" placeholder="মোট টাকা (৳)" required>
-                    <button type="button" class="submit-btn" onclick="saveData()">ডাটা সেভ করুন</button>
-                </form>
-            </div>
+            <div class="grid-container">
+                <div class="box box-black">
+                    TOTAL RECEIVED
+                    <span class="count-val" id="totalReceived">₹ 0</span>
+                </div>
+                <div class="box box-black">
+                    TOTAL PAYMENT
+                    <span class="count-val" id="totalPayment">₹ 0</span>
+                </div>
+                <div class="box box-black">
+                    TOTAL PRICE
+                    <span class="count-val" id="totalPrice">₹ 0</span>
+                </div>
+                <div class="box box-red">
+                    PAYMENT ON <br>CASH/ONLINE
+                    <span class="count-val" id="paymentStatus">₹ 0</span>
+                </div>
 
-            <div class="table-container">
-                <table id="dataTable">
-                    <thead>
-                        <tr>
-                            <th>টাইম</th>
-                            <th>আইটেম</th>
-                            <th>লিটার</th>
-                            <th>টাকা</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        </tbody>
-                </table>
+                <a href="product.html" class="box box-blue">
+                    SELL & RECEIVED
+                    <span style="font-size: 10px;">product.html</span>
+                </a>
+                <a href="invoice.html" class="box box-green">
+                    ALL BILL
+                    <span style="font-size: 10px;">invoice.html</span>
+                </a>
+                <a href="seller.html" class="box box-orange">
+                    SELLER MANAGEMENT
+                    <span style="font-size: 10px;">seller.html</span>
+                </a>
             </div>
+        </div>
+
+        <div class="footer-info">
+            Database: Connected (Supabase) | Currency: INR (₹)
         </div>
     </div>
 
     <script>
-        // মোড পরিবর্তন করার ফাংশন
-        function toggleMode() {
-            const wrapper = document.getElementById('contentWrapper');
-            const modeText = document.getElementById('modeText');
-            const modeIcon = document.getElementById('modeIcon');
+        // Supabase Configuration
+        const _supabaseUrl = 'https://rounqtjnvgntetliprqy.supabase.co';
+        const _supabaseKey = 'sb_publishable_n4AovVgcPqcrBr1xqG19QA_H8KxB9tq';
+        const supabase = supabase.createClient(_supabaseUrl, _supabaseKey);
 
-            if (wrapper.classList.contains('desktop-view')) {
-                wrapper.classList.remove('desktop-view');
-                modeText.innerText = "Desktop Mode";
-                modeIcon.innerText = "🖥️";
-                document.body.style.backgroundColor = "#f0f2f5";
-            } else {
-                wrapper.classList.add('desktop-view');
-                modeText.innerText = "Mobile Mode";
-                modeIcon.innerText = "📱";
-                document.body.style.backgroundColor = "#333";
-            }
+        // Toggle View Function
+        function toggleView() {
+            document.getElementById('mainFrame').classList.toggle('desktop-mode');
         }
 
-        // ডাটা সেভ করার ফাংশন
-        let totalCash = 0;
-        function saveData() {
-            const type = document.getElementById('oilType').value;
-            const qty = document.getElementById('qty').value;
-            const price = document.getElementById('price').value;
-            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-            if(qty && price) {
-                const table = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
-                const row = table.insertRow(0); // নতুন ডাটা উপরে দেখাবে
-                
-                row.innerHTML = `
-                    <td>${time}</td>
-                    <td><b>${type}</b></td>
-                    <td>${qty} L</td>
-                    <td>৳ ${price}</td>
-                `;
-
-                // ক্যাশ আপডেট
-                totalCash += parseInt(price);
-                document.getElementById('todayCash').innerText = totalCash.toLocaleString();
-
-                // ফর্ম ক্লিয়ার
-                document.getElementById('bmdForm').reset();
-            } else {
-                alert("দয়া করে সব ঘর পূরণ করুন!");
-            }
+        // ডাটাবেস থেকে রিয়েল টাইম ডাটা আনার ফাংশন (প্রাথমিক স্ট্রাকচার)
+        async function fetchLiveData() {
+            // উদাহরণস্বরূপ আপনার টেবিলের নাম যদি 'sales' হয়
+            // let { data, error } = await supabase.from('sales').select('*');
+            // ডাটা প্রসেসিং করে এখানে ইনার টেক্সট আপডেট হবে
+            console.log("Supabase connected. Waiting for table setup...");
         }
+
+        fetchLiveData();
     </script>
 </body>
 </html>
