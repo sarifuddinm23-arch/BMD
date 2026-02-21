@@ -91,43 +91,43 @@
 
         <div class="stats-grid">
             <div class="stat-card received">
-                <span class="stat-label">Received</span>
+                <span class="stat-label">Total Received</span>
                 <span class="stat-value" id="totalReceived">₹ 0</span>
             </div>
             <div class="stat-card payment">
-                <span class="stat-label">Payment</span>
+                <span class="stat-label">Total Paid</span>
                 <span class="stat-value" id="totalPayment">₹ 0</span>
             </div>
             <div class="stat-card balance">
-                <span class="stat-label">Balance</span>
+                <span class="stat-label">Net Cash</span>
                 <span class="stat-value" id="totalPrice">₹ 0</span>
             </div>
             <div class="stat-card due">
-                <span class="stat-label">Total Due</span>
-                <span class="stat-value" id="paymentStatus">₹ 0</span>
+                <span class="stat-label">Total Outstanding Due</span>
+                <span class="stat-value" id="paymentStatus" style="color: var(--danger);">₹ 0</span>
             </div>
         </div>
 
         <div class="grid-container">
+            <a href="account.html" class="box" style="border: 2px solid var(--primary);">
+                <i class="fas fa-users-cog"></i>
+                <span>ACCOUNTS</span>
+            </a>
             <a href="Transactions.html" class="box">
                 <i class="fas fa-plus-circle"></i>
-                <span>TRANSACTIONS</span>
+                <span>QUICK BILL</span>
             </a>
             <a href="history.html" class="box">
-                <i class="fas fa-file-invoice"></i>
-                <span>INVOICE</span>
+                <i class="fas fa-history"></i>
+                <span>RECORDS</span>
             </a>
-            <a href="payments.html" class="box" style="border: 1px solid var(--primary);">
+            <a href="payments.html" class="box">
                 <i class="fas fa-money-bill-transfer"></i>
                 <span>PAYMENT</span>
             </a>
-            <a href="Seller_Management.html" class="box">
-                <i class="fas fa-users"></i>
-                <span>PARTIES</span>
-            </a>
             <a href="myprofile.html" class="box">
-                <i class="fas fa-user-cog"></i>
-                <span>PROFILE</span>
+                <i class="fas fa-user-shield"></i>
+                <span>SETTINGS</span>
             </a>
         </div>
 
@@ -143,42 +143,41 @@
 
         async function fetchLiveData() {
             try {
-                // Transactions থেকে ডাটা নিয়ে আসা
-                const { data, error } = await supabaseClient.from('transactions').select('*');
-                if (error) throw error;
+                // ১. কেনাবেচার ডাটা আনা
+                const { data: trans, error: e1 } = await supabaseClient.from('transactions').select('*');
+                // ২. পেমেন্ট ডাটা আনা
+                const { data: pays, error: e2 } = await supabaseClient.from('payments').select('*');
 
-                // Payments টেবিল থেকে ডাটা নিয়ে আসা (পেমেন্ট কার্ডের জন্য)
-                const { data: payData } = await supabaseClient.from('payments').select('*');
+                if (e1 || e2) throw e1 || e2;
 
-                let received = 0, payment = 0, due = 0;
+                let cashIn = 0, cashOut = 0, totalDue = 0;
                 
-                // ট্রানজাকশন ক্যালকুলেশন
-                data.forEach(item => {
-                    received += parseFloat(item.paid_amount || 0);
-                    due += parseFloat(item.due_amount || 0);
-                    if(item.type === 'purchase' || item.type === 'receive') {
-                        payment += parseFloat(item.paid_amount || 0);
-                    }
+                // ট্রানজাকশন থেকে হিসাব (Billings)
+                trans.forEach(item => {
+                    // যদি বিক্রি হয়, তবে কত টাকা পেলাম (paid_amount)
+                    cashIn += parseFloat(item.paid_amount || 0);
+                    // মোট বাকি (due_amount)
+                    totalDue += parseFloat(item.due_amount || 0);
                 });
 
-                // পেমেন্ট টেবিল থেকে পেমেন্ট যোগ করা (যদি থাকে)
-                if(payData) {
-                    payData.forEach(p => {
-                        if(p.type === 'gave') payment += parseFloat(p.amount || 0);
-                        if(p.type === 'took') received += parseFloat(p.amount || 0);
+                // পেমেন্ট টেবিল থেকে হিসাব (Direct Money)
+                if(pays) {
+                    pays.forEach(p => {
+                        if(p.payment_type === 'took') cashIn += parseFloat(p.amount || 0);
+                        if(p.payment_type === 'gave') cashOut += parseFloat(p.amount || 0);
                     });
                 }
 
-                document.getElementById('totalReceived').innerText = formatINR(received);
-                document.getElementById('totalPayment').innerText = formatINR(payment);
-                document.getElementById('totalPrice').innerText = formatINR(received - payment);
-                document.getElementById('paymentStatus').innerText = formatINR(due);
+                // UI আপডেট
+                document.getElementById('totalReceived').innerText = formatINR(cashIn);
+                document.getElementById('totalPayment').innerText = formatINR(cashOut);
+                document.getElementById('totalPrice').innerText = formatINR(cashIn - cashOut);
+                document.getElementById('paymentStatus').innerText = formatINR(totalDue - cashOut); // নিট বাকি
             } catch (err) {
-                console.log("Error loading dashboard:", err.message);
+                console.error("Error loading dashboard:", err.message);
             }
         }
 
-        // টাকার ফরম্যাট করার ফাংশন
         function formatINR(val) {
             return "₹ " + parseFloat(val).toLocaleString('en-IN', { minimumFractionDigits: 2 });
         }
