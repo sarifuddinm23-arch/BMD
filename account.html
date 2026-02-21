@@ -3,71 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BMD - Accounts</title>
+    <title>BMD - Accounts Management</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --primary: #f39c12; --dark: #1a1a1a; --bg: #f4f4f9; }
-        body { font-family: sans-serif; margin: 0; background: var(--bg); }
-        .top-bar { background: var(--dark); padding: 15px; color: white; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; z-index: 100; }
-        
-        .container { max-width: 600px; margin: 20px auto; padding: 0 15px; }
-        
-        /* Account Card Style */
-        .acc-card { 
-            background: white; padding: 15px; border-radius: 12px; 
-            display: flex; align-items: center; gap: 15px; margin-bottom: 12px; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05); cursor: pointer;
-            transition: 0.2s; border: 1px solid transparent;
+        :root { 
+            --primary: #f39c12; --dark: #1a1a1a; --bg: #f0f2f5; 
+            --white: #ffffff; --shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
-        .acc-card:hover { border-color: var(--primary); transform: translateY(-2px); }
-        .acc-card img { width: 55px; height: 55px; border-radius: 50%; object-fit: cover; background: #eee; }
-        .acc-info { flex-grow: 1; }
-        .acc-info h3 { margin: 0; font-size: 17px; color: var(--dark); }
-        .acc-info p { margin: 3px 0 0; font-size: 13px; color: #777; }
         
-        .balance-tag { text-align: right; }
-        .balance-tag span { display: block; font-size: 10px; color: #888; text-transform: uppercase; }
-        .balance-tag b { font-size: 15px; color: #e74c3c; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); transition: 0.3s; }
+        
+        /* Top Bar */
+        .top-bar { 
+            background: var(--dark); padding: 15px 20px; color: white; 
+            display: flex; justify-content: space-between; align-items: center; 
+            position: sticky; top:0; z-index: 1000; 
+        }
+
+        .view-mode-btn {
+            background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3);
+            padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 12px;
+        }
+
+        /* Responsive Container */
+        .phone-frame { width: 95%; max-width: 420px; margin: 20px auto; transition: all 0.4s ease; }
+        .desktop-mode { max-width: 1100px !important; }
+
+        /* Grid Design (Index Style) */
+        .acc-grid { 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
+            gap: 15px; padding: 10px 0; 
+        }
+
+        .acc-box {
+            background: var(--white); border-radius: 15px; padding: 20px 15px;
+            text-align: center; box-shadow: var(--shadow); cursor: pointer;
+            transition: 0.3s; border-bottom: 4px solid transparent;
+            text-decoration: none; color: inherit; display: block;
+        }
+
+        .acc-box:hover { transform: translateY(-5px); border-color: var(--primary); }
+        
+        .acc-box img { width: 60px; height: 60px; border-radius: 50%; margin-bottom: 10px; border: 2px solid #eee; }
+        .acc-box h3 { margin: 10px 0 5px; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .acc-box p { margin: 0; font-size: 12px; color: #777; }
+        .acc-box .due-amt { display: block; margin-top: 10px; font-weight: bold; color: #e74c3c; font-size: 14px; }
 
         /* Floating Add Button */
-        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); cursor: pointer; border: none; }
+        .fab { 
+            position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; 
+            background: var(--primary); color: white; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 24px; box-shadow: 0 5px 20px rgba(243, 156, 18, 0.4); 
+            cursor: pointer; border: none; z-index: 999;
+        }
 
-        /* Form Overlay */
-        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; }
-        .form-box { background: white; width: 90%; max-width: 400px; padding: 25px; border-radius: 15px; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        .btn-save { background: var(--primary); color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        /* Full Screen Form Overlay */
+        .overlay { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: var(--bg); z-index: 2000; overflow-y: auto;
+        }
+
+        .form-container { width: 100%; max-width: 400px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
+        .form-header { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; }
+        .form-header h2 { margin: 0; font-size: 20px; }
+
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 12px; font-weight: bold; color: #555; margin-bottom: 5px; text-transform: uppercase; }
+        input, select { 
+            width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 12px; 
+            font-size: 15px; box-sizing: border-box; background: white; outline: none;
+        }
+        input:focus { border-color: var(--primary); }
+
+        .btn-save { 
+            background: var(--dark); color: white; border: none; padding: 16px; 
+            width: 100%; border-radius: 12px; font-weight: bold; font-size: 16px; 
+            cursor: pointer; margin-top: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <span onclick="window.location.href='index.html'"><i class="fas fa-arrow-left"></i> BMD ACCOUNTS</span>
-    <i class="fas fa-search"></i>
+    <span onclick="window.location.href='index.html'" style="cursor:pointer;"><i class="fas fa-arrow-left"></i> ACCOUNTS</span>
+    <button class="view-mode-btn" onclick="toggleView()"><i class="fas fa-desktop"></i> View Mode</button>
 </div>
 
-<div class="container" id="accList">
-    <p style="text-align:center; padding-top:50px; color:#888;">লোড হচ্ছে...</p>
+<div class="phone-frame" id="mainFrame">
+    <div class="acc-grid" id="accList">
+        <p style="text-align:center; grid-column: 1/-1; color:#aaa;">লোড হচ্ছে...</p>
+    </div>
 </div>
 
-<button class="fab" onclick="document.getElementById('addForm').style.display='flex'"><i class="fas fa-user-plus"></i></button>
+<button class="fab" onclick="toggleForm(true)"><i class="fas fa-plus"></i></button>
 
 <div class="overlay" id="addForm">
-    <div class="form-box">
-        <h2 style="margin-top:0;">নতুন অ্যাকাউন্ট</h2>
-        <input type="text" id="name" placeholder="পুরো নাম">
-        <input type="number" id="mobile" placeholder="মোবাইল নম্বর">
-        <input type="text" id="address" placeholder="ঠিকানা">
-        <button class="btn-save" onclick="saveAccount()">তৈরি করুন</button>
-        <button onclick="document.getElementById('addForm').style.display='none'" style="background:none; border:none; color:red; width:100%; margin-top:10px; cursor:pointer;">বন্ধ করুন</button>
+    <div class="form-container">
+        <div class="form-header">
+            <i class="fas fa-times" onclick="toggleForm(false)" style="font-size: 20px; cursor:pointer;"></i>
+            <h2>নতুন অ্যাকাউন্ট তৈরি</h2>
+        </div>
+
+        <div class="input-group">
+            <label>নাম (Full Name)</label>
+            <input type="text" id="name" placeholder="উদা: আব্দুল করিম">
+        </div>
+
+        <div class="input-group">
+            <label>মোবাইল (Mobile)</label>
+            <input type="number" id="mobile" placeholder="017xxxxxxxx">
+        </div>
+
+        <div class="input-group">
+            <label>ঠিকানা (Address)</label>
+            <input type="text" id="address" placeholder="গ্রাম, পোস্ট অফিস">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="input-group">
+                <label>পিন কোড (PIN)</label>
+                <input type="number" id="pin" placeholder="74xxxx">
+            </div>
+            <div class="input-group">
+                <label>রাজ্য (State)</label>
+                <select id="state">
+                    <option value="West Bengal">West Bengal</option>
+                    <option value="Assam">Assam</option>
+                    <option value="Bihar">Bihar</option>
+                    <option value="Odisha">Odisha</option>
+                    </select>
+            </div>
+        </div>
+
+        <button class="btn-save" onclick="saveAccount()" id="saveBtn">অ্যাকাউন্ট সেভ করুন</button>
     </div>
 </div>
 
 <script>
+    function toggleView() {
+        document.getElementById('mainFrame').classList.toggle('desktop-mode');
+    }
+
+    function toggleForm(show) {
+        document.getElementById('addForm').style.display = show ? 'block' : 'none';
+    }
+
     async function loadAccounts() {
-        const { data, error } = await supabaseClient.from('accounts').select('*').order('created_at', {ascending: false});
+        const { data, error } = await supabaseClient.from('accounts').select('*').order('name', {ascending: true});
         if (error) return;
 
         const list = document.getElementById('accList');
@@ -75,24 +160,19 @@
 
         data.forEach(acc => {
             list.innerHTML += `
-                <div class="acc-card" onclick="window.location.href='profile.html?id=${acc.id}'">
-                    <img src="https://ui-avatars.com/api/?name=${acc.name}&background=random" alt="user">
-                    <div class="acc-info">
-                        <h3>${acc.name}</h3>
-                        <p><i class="fas fa-phone"></i> ${acc.mobile}</p>
-                    </div>
-                    <div class="balance-tag">
-                        <span>Total Due</span>
-                        <b id="bal-${acc.id}">₹ 0.00</b>
-                    </div>
-                </div>
+                <a href="profile.html?id=${acc.id}" class="acc-box">
+                    <img src="https://ui-avatars.com/api/?name=${acc.name}&background=random&color=fff" alt="user">
+                    <h3>${acc.name}</h3>
+                    <p><i class="fas fa-phone-alt"></i> ${acc.mobile}</p>
+                    <p><i class="fas fa-map-marker-alt"></i> ${acc.address || 'N/A'}</p>
+                    <span class="due-amt" id="bal-${acc.id}">₹ 0.00</span>
+                </a>
             `;
             updateBalance(acc.id);
         });
     }
 
     async function updateBalance(accId) {
-        // এই ফাংশনটি প্রত্যেকটি একাউন্টের মোট বাকি হিসাব করে দেখাবে
         const { data: trans } = await supabaseClient.from('transactions').select('due_amount').eq('party_id', accId);
         const { data: pays } = await supabaseClient.from('payments').select('amount, payment_type').eq('party_id', accId);
         
@@ -106,15 +186,30 @@
         const name = document.getElementById('name').value;
         const mobile = document.getElementById('mobile').value;
         const address = document.getElementById('address').value;
+        const pin = document.getElementById('pin').value;
+        const state = document.getElementById('state').value;
+        const btn = document.getElementById('saveBtn');
 
-        if(!name || !mobile) return alert("নাম ও মোবাইল দিন!");
+        if(!name || !mobile) return alert("দয়া করে নাম ও মোবাইল দিন!");
 
-        const { error } = await supabaseClient.from('accounts').insert([{ name, mobile, address }]);
-        if(error) alert(error.message);
-        else {
-            document.getElementById('addForm').style.display='none';
+        btn.disabled = true;
+        btn.innerText = "সেভ হচ্ছে...";
+
+        const { error } = await supabaseClient.from('accounts').insert([{ 
+            name, mobile, address, pin, state 
+        }]);
+
+        if(error) {
+            alert("ভুল হয়েছে: " + error.message);
+        } else {
+            alert("অ্যাকাউন্ট তৈরি সফল! ✅");
+            toggleForm(false);
             loadAccounts();
+            // Reset fields
+            document.querySelectorAll('input').forEach(i => i.value = '');
         }
+        btn.disabled = false;
+        btn.innerText = "অ্যাকাউন্ট সেভ করুন";
     }
 
     window.onload = loadAccounts;
