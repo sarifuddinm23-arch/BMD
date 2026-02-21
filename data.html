@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Settings - BMD</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary: #f39c12; --dark: #1a1a1a; --bg: #f0f2f5; --white: #fff; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); transition: 0.3s; }
+        
+        /* Top Bar */
+        .top-bar { 
+            background: var(--dark); color: white; padding: 15px 20px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            position: sticky; top:0; z-index: 1000; 
+        }
+
+        .toggle-btn { 
+            background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 13px;
+        }
+
+        /* Layout Container */
+        .container { 
+            width: 95%; max-width: 420px; margin: 20px auto; transition: all 0.4s ease; 
+        }
+        .desktop-mode { max-width: 1000px !important; }
+
+        /* Card Design */
+        .data-card { 
+            background: var(--white); border-radius: 12px; padding: 20px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; 
+        }
+        .card-header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;
+        }
+        .card-header h3 { margin: 0; font-size: 16px; color: var(--dark); }
+        .add-icon { 
+            background: var(--primary); color: white; width: 30px; height: 30px; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; transition: 0.2s; 
+        }
+        .add-icon:hover { transform: scale(1.1); }
+
+        /* List Styling */
+        .data-list { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; }
+        .data-list li { 
+            padding: 10px; border-bottom: 1px solid #f9f9f9; font-size: 14px; 
+            display: flex; justify-content: space-between;
+        }
+        .data-list li:last-child { border: none; }
+        .empty-msg { color: #aaa; font-size: 13px; text-align: center; }
+
+        .desktop-grid { 
+            display: grid; 
+            grid-template-columns: 1fr; 
+            gap: 20px; 
+        }
+        .desktop-mode .desktop-grid { grid-template-columns: 1fr 1fr 1fr; }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <div onclick="history.back()" style="cursor:pointer;"><i class="fas fa-arrow-left"></i> SETTINGS</div>
+    <button class="toggle-btn" onclick="toggleView()"><i class="fas fa-desktop"></i> View Mode</button>
+</div>
+
+<div class="container" id="mainWrapper">
+    <div class="desktop-grid">
+        
+        <div class="data-card">
+            <div class="card-header">
+                <h3>Mother Category</h3>
+                <div class="add-icon" onclick="addMotherCat()"><i class="fas fa-plus"></i></div>
+            </div>
+            <ul id="motherList" class="data-list"><li class="empty-msg">Loading...</li></ul>
+        </div>
+
+        <div class="data-card">
+            <div class="card-header">
+                <h3>Sub Category</h3>
+                <div class="add-icon" onclick="addSubCat()"><i class="fas fa-plus"></i></div>
+            </div>
+            <ul id="subList" class="data-list"><li class="empty-msg">Select Mother Cat First</li></ul>
+        </div>
+
+        <div class="data-card">
+            <div class="card-header">
+                <h3>Product Names</h3>
+                <div class="add-icon" onclick="addProduct()"><i class="fas fa-plus"></i></div>
+            </div>
+            <ul id="productList" class="data-list"><li class="empty-msg">Select Sub Cat First</li></ul>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function toggleView() {
+        document.getElementById('mainWrapper').classList.toggle('desktop-mode');
+    }
+
+    // --- Load Data ---
+    async function fetchMotherCats() {
+        const { data } = await supabaseClient.from('mother_categories').select('*').order('name');
+        const list = document.getElementById('motherList');
+        list.innerHTML = data.length ? '' : '<li class="empty-msg">No data found</li>';
+        data.forEach(item => {
+            list.innerHTML += `<li>${item.name} <i class="fas fa-chevron-right" style="color:#ddd"></i></li>`;
+        });
+    }
+
+    // --- Add Data Functions ---
+    async function addMotherCat() {
+        const name = prompt("Enter Mother Category Name (e.g., Electronics, Grocery):");
+        if (!name) return;
+        const { error } = await supabaseClient.from('mother_categories').insert([{ name }]);
+        if (error) alert(error.message);
+        else fetchMotherCats();
+    }
+
+    async function addSubCat() {
+        // এই ফাংশনটি কাজ করার জন্য আপনাকে ড্রপডাউন থেকে Mother Category সিলেক্ট করার লজিক দিতে হবে
+        // আপাতত সহজ করার জন্য সরাসরি নাম ইনপুট নিচ্ছি
+        const name = prompt("Enter Sub Category Name:");
+        if (name) alert("Logic: Connect this to a Mother Category ID in your DB.");
+    }
+
+    async function addProduct() {
+        const name = prompt("Enter Product Name:");
+        if (name) alert("Logic: Connect this to a Sub Category ID in your DB.");
+    }
+
+    window.onload = fetchMotherCats;
+</script>
+
+</body>
+</html>
