@@ -6,6 +6,7 @@
     <title>BMD - Transaction Records</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         :root { --primary: #f39c12; --dark: #1a1a1a; --bg: #f4f4f9; }
@@ -13,188 +14,202 @@
         .top-bar { background: var(--dark); padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white; position: sticky; top:0; z-index: 100; }
         
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 15px; }
-        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
-        .card h4 { margin: 0; font-size: 12px; color: #666; text-transform: uppercase; }
+        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; border-bottom: 4px solid #ddd; }
+        .card h4 { margin: 0; font-size: 11px; color: #666; text-transform: uppercase; }
         .card p { margin: 5px 0 0; font-size: 18px; font-weight: bold; color: var(--dark); }
 
-        .search-container { padding: 0 15px; margin-bottom: 10px; }
-        #searchInput { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; }
+        .search-container { padding: 0 15px; margin-bottom: 10px; display: flex; gap: 10px; }
+        #searchInput { flex-grow: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; }
+        .refresh-btn { padding: 12px; background: #fff; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; }
 
         .table-container { background: white; margin: 10px; border-radius: 8px; overflow-x: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 800px; }
-        th { background: #eee; padding: 12px; text-align: left; position: sticky; top: 0; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 900px; }
+        th { background: #f8f9fa; padding: 12px; text-align: left; position: sticky; top: 0; color: #555; }
         td { padding: 12px; border-bottom: 1px solid #eee; }
 
         .type-sell { color: #e67e22; font-weight: bold; }
         .type-receive { color: #27ae60; font-weight: bold; }
+        .type-payment { color: #3498db; font-weight: bold; }
 
-        .action-btns { display: flex; gap: 8px; align-items: center; }
-        .btn { border: none; padding: 8px; border-radius: 4px; cursor: pointer; color: white; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; }
+        .action-btns { display: flex; gap: 5px; }
+        .btn { border: none; padding: 8px; border-radius: 4px; cursor: pointer; color: white; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; }
         .btn-edit { background: #3498db; }
         .btn-del { background: #e74c3c; }
         .btn-print { background: #2ecc71; }
-        .btn-wa { background: #25D366; }
+        .btn-wa { background: #25D366; text-decoration: none; }
 
-        /* A4 Layout for 2 Invoices */
         @media print {
             body * { visibility: hidden; }
             #printWrapper, #printWrapper * { visibility: visible; }
-            #printWrapper { 
-                position: absolute; left: 0; top: 0; width: 210mm; 
-                display: flex !important; justify-content: space-between; 
-                background: white; padding: 0;
-            }
-            .invoice-box { 
-                width: 100mm; height: 150mm; border: 1px solid #000; 
-                padding: 15mm; box-sizing: border-box; position: relative;
-            }
-            .cutter-line { 
-                border-left: 1px dashed #000; height: 150mm; 
-                margin: 0 auto; width: 1px;
-            }
-            .no-print { display: none !important; }
+            #printWrapper { position: absolute; left: 0; top: 0; width: 210mm; display: flex !important; justify-content: space-around; }
+            .invoice-box { width: 100mm; border: 1px solid #000; padding: 10mm; }
         }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <span onclick="window.location.href='index.html'" style="cursor:pointer;">⬅️ TRANSACTION RECORDS</span>
-    <span id="status">Active</span>
+    <span onclick="window.location.href='index.html'" style="cursor:pointer;"><i class="fas fa-arrow-left"></i> BMD HISTORY</span>
+    <span id="status">● All Transactions</span>
 </div>
 
 <div class="summary-grid">
-    <div class="card" style="border-bottom: 4px solid #3498db;"><h4>Total Qty</h4><p id="sumQty">0.00</p></div>
-    <div class="card" style="border-bottom: 4px solid #2ecc71;"><h4>Net Amount</h4><p id="sumNet">₹ 0.00</p></div>
-    <div class="card" style="border-bottom: 4px solid #f1c40f;"><h4>Paid</h4><p id="sumPaid">₹ 0.00</p></div>
-    <div class="card" style="border-bottom: 4px solid #e74c3c;"><h4>Total Due</h4><p id="sumDue">₹ 0.00</p></div>
+    <div class="card" style="border-color: #3498db;"><h4>Total Sales</h4><p id="sumNet">₹ 0.00</p></div>
+    <div class="card" style="border-color: #2ecc71;"><h4>Total Received</h4><p id="sumPaid">₹ 0.00</p></div>
+    <div class="card" style="border-color: #e74c3c;"><h4>Total Outstanding</h4><p id="sumDue">₹ 0.00</p></div>
 </div>
 
 <div class="search-container">
-    <input type="text" id="searchInput" placeholder="সেলার বা প্রোডাক্টের নাম দিয়ে খুঁজুন..." onkeyup="filterTable()">
+    <input type="text" id="searchInput" placeholder="Search by name or product..." onkeyup="filterTable()">
+    <button class="refresh-btn" onclick="fetchHistory()"><i class="fas fa-sync-alt"></i></button>
 </div>
 
 <div class="table-container">
-    <table id="transTable">
+    <table>
         <thead>
             <tr>
                 <th>Date</th>
-                <th>Seller</th>
-                <th>Type</th>
-                <th>Product</th>
-                <th>Qty</th>
-                <th>Total</th>
-                <th>Due</th>
+                <th>Party/Seller</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Status/Note</th>
                 <th class="no-print">Actions</th>
             </tr>
         </thead>
-        <tbody id="transListBody"></tbody>
+        <tbody id="combinedListBody"></tbody>
     </table>
 </div>
 
 <div id="printWrapper" style="display:none;">
     <div class="invoice-box" id="inv1"></div>
-    <div class="cutter-line"></div>
     <div class="invoice-box" id="inv2"></div>
 </div>
 
 <script>
-    let allData = [];
+    let combinedData = [];
 
     async function fetchHistory() {
-        const { data, error } = await supabaseClient
-            .from('transactions')
-            .select('*, parties(first_name, mobile)')
-            .order('created_at', { ascending: false });
+        // ১. ট্রানজাকশন এবং পেমেন্ট দুই টেবিল থেকেই ডাটা আনা
+        const { data: trans, error: e1 } = await supabaseClient.from('transactions').select('*, parties(first_name, mobile)');
+        const { data: pays, error: e2 } = await supabaseClient.from('payments').select('*, parties(first_name, mobile)');
 
-        if (error) { alert(error.message); return; }
-        allData = data;
-        displayData(allData);
-        calculateSummary(allData);
+        if (e1 || e2) { alert("Error fetching data!"); return; }
+
+        // ২. ডাটাগুলোকে এক ফরম্যাটে আনা (Normalize)
+        const normalizedTrans = trans.map(t => ({
+            id: t.id,
+            date: new Date(t.created_at),
+            party: t.parties?.first_name || 'N/A',
+            mobile: t.parties?.mobile,
+            type: t.type, // sell/receive
+            product: t.product || 'Bill',
+            amount: t.net_total,
+            impact: t.due_amount,
+            isPayment: false,
+            raw: t
+        }));
+
+        const normalizedPays = pays.map(p => ({
+            id: p.id,
+            date: new Date(p.created_at),
+            party: p.parties?.first_name || 'N/A',
+            mobile: p.parties?.mobile,
+            type: 'payment',
+            product: p.payment_type === 'took' ? 'Money Received' : 'Money Paid',
+            amount: p.amount,
+            impact: p.payment_type === 'gave' ? -p.amount : p.amount,
+            isPayment: true,
+            raw: p
+        }));
+
+        // ৩. সব ডাটা মিশিয়ে তারিখ অনুযায়ী সাজানো
+        combinedData = [...normalizedTrans, ...normalizedPays].sort((a, b) => b.date - a.date);
+        
+        displayData(combinedData);
+        calculateSummary(trans, pays);
     }
 
     function displayData(data) {
-        const tbody = document.getElementById('transListBody');
+        const tbody = document.getElementById('combinedListBody');
         tbody.innerHTML = '';
 
         data.forEach(item => {
-            const waMsg = encodeURIComponent(`*INVOICE*\nDate: ${new Date(item.created_at).toLocaleDateString()}\nProduct: ${item.product}\nTotal: ₹${item.net_total}\nDue: ₹${item.due_amount}`);
-            const row = `
+            const typeLabel = item.type === 'sell' ? 'ক্রয়-বিক্রি' : (item.type === 'payment' ? 'পেমেন্ট' : 'ক্রয়');
+            const typeClass = `type-${item.type}`;
+            const waMsg = encodeURIComponent(`*BMD Record*\nDate: ${item.date.toLocaleDateString()}\nDescription: ${item.product}\nAmount: ₹${item.amount}`);
+            
+            tbody.innerHTML += `
                 <tr>
-                    <td>${new Date(item.created_at).toLocaleDateString()}</td>
-                    <td>${item.parties?.first_name || 'N/A'}</td>
-                    <td class="type-${item.type}">${item.type === 'sell' ? 'বিক্রি' : 'ক্রয়'}</td>
+                    <td>${item.date.toLocaleDateString()}</td>
+                    <td><b>${item.party}</b></td>
+                    <td class="${typeClass}">${typeLabel.toUpperCase()}</td>
                     <td>${item.product}</td>
-                    <td>${item.qty}</td>
-                    <td>₹${item.net_total.toFixed(2)}</td>
-                    <td style="color:red">₹${item.due_amount.toFixed(2)}</td>
+                    <td>₹${item.amount.toFixed(2)}</td>
+                    <td style="font-size:11px; color:#666;">${item.isPayment ? (item.raw.note || 'Cash') : 'Bill Due: ₹'+item.impact}</td>
                     <td class="action-btns no-print">
-                        <a href="https://wa.me/91${item.parties?.mobile}?text=${waMsg}" target="_blank" class="btn btn-wa">🟢</a>
-                        <button class="btn btn-print" onclick="preparePrint('${item.id}')">🖨️</button>
-                        <button class="btn btn-edit" onclick="window.location.href='edit_transaction.html?id=${item.id}'">✏️</button>
-                        <button class="btn btn-del" onclick="deleteEntry('${item.id}')">🗑️</button>
+                        <a href="https://wa.me/91${item.mobile}?text=${waMsg}" target="_blank" class="btn btn-wa"><i class="fab fa-whatsapp"></i></a>
+                        <button class="btn btn-print" onclick="preparePrint('${item.id}', ${item.isPayment})"><i class="fas fa-print"></i></button>
+                        <button class="btn btn-del" onclick="deleteEntry('${item.id}', ${item.isPayment})"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>
             `;
-            tbody.innerHTML += row;
         });
     }
 
-    function calculateSummary(data) {
-        let tQty = 0, tNet = 0, tPaid = 0, tDue = 0;
-        data.forEach(i => { tQty += i.qty; tNet += i.net_total; tPaid += i.paid_amount; tDue += i.due_amount; });
-        document.getElementById('sumQty').innerText = tQty.toFixed(2);
-        document.getElementById('sumNet').innerText = tNet.toFixed(2);
-        document.getElementById('sumPaid').innerText = tPaid.toFixed(2);
-        document.getElementById('sumDue').innerText = tDue.toFixed(2);
+    function calculateSummary(trans, pays) {
+        let totalSales = trans.reduce((sum, t) => sum + t.net_total, 0);
+        let totalReceived = pays.filter(p => p.payment_type === 'took').reduce((sum, p) => sum + p.amount, 0);
+        let totalPaidOut = pays.filter(p => p.payment_type === 'gave').reduce((sum, p) => sum + p.amount, 0);
+        
+        let totalDue = trans.reduce((sum, t) => sum + t.due_amount, 0) - (totalPaidOut);
+
+        document.getElementById('sumNet').innerText = "₹ " + totalSales.toFixed(2);
+        document.getElementById('sumPaid').innerText = "₹ " + totalReceived.toFixed(2);
+        document.getElementById('sumDue').innerText = "₹ " + totalDue.toFixed(2);
     }
 
     function filterTable() {
-        const query = document.getElementById('searchInput').value.toLowerCase();
-        const filtered = allData.filter(item => 
-            item.parties?.first_name.toLowerCase().includes(query) || 
-            item.product.toLowerCase().includes(query)
-        );
+        const q = document.getElementById('searchInput').value.toLowerCase();
+        const filtered = combinedData.filter(i => i.party.toLowerCase().includes(q) || i.product.toLowerCase().includes(q));
         displayData(filtered);
     }
 
-    async function deleteEntry(id) {
-        if(confirm("ডিলিট করতে চান?")) {
-            await supabaseClient.from('transactions').delete().eq('id', id);
+    async function deleteEntry(id, isPayment) {
+        if(confirm("Are you sure? This cannot be undone.")) {
+            const table = isPayment ? 'payments' : 'transactions';
+            await supabaseClient.from(table).delete().eq('id', id);
             fetchHistory();
         }
     }
 
-    function preparePrint(id) {
-        const t = allData.find(i => i.id === id);
-        if(!t) return;
+    function preparePrint(id, isPayment) {
+        const item = combinedData.find(i => i.id === id);
+        if(!item) return;
 
         const content = `
-            <div style="text-align:center; border-bottom:1px solid #000; margin-bottom:10px; padding-bottom:5px;">
-                <h2 style="margin:0; letter-spacing:2px;">INVOICE</h2>
+            <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:10px;">
+                <h2 style="margin:0;">BMD BUSINESS</h2>
+                <p style="margin:0; font-size:12px;">Transaction Voucher</p>
             </div>
-            <p style="font-size:12px;"><strong>Date:</strong> ${new Date(t.created_at).toLocaleString()}</p>
-            <p><strong>Party:</strong> ${t.parties?.first_name || 'N/A'}</p>
-            <p><strong>Product:</strong> ${t.product}</p>
-            <hr>
-            <div style="display:flex; justify-content: space-between;">
-                <span>Qty: ${t.qty}</span>
-                <span>Rate: ₹${t.rate}</span>
+            <div style="margin-top:15px; font-size:14px;">
+                <p><strong>Date:</strong> ${item.date.toLocaleString()}</p>
+                <p><strong>Party:</strong> ${item.party}</p>
+                <p><strong>Type:</strong> ${item.product}</p>
+                <hr>
+                <h1 style="text-align:center; margin:20px 0;">₹ ${item.amount.toFixed(2)}</h1>
+                <p><strong>Note:</strong> ${item.isPayment ? (item.raw.note || '-') : 'Invoice Record'}</p>
             </div>
-            <h3 style="margin: 15px 0 5px 0;">Total: ₹${t.net_total.toFixed(2)}</h3>
-            <p style="margin:0;">Paid: ₹${t.paid_amount.toFixed(2)}</p>
-            <p style="color:red; margin:5px 0;">Due: ₹${t.due_amount.toFixed(2)}</p>
-            <hr style="border:0.5px dashed #ccc;">
-            <p style="text-align:center; font-size:10px; margin-top:20px;">System Generated Invoice</p>
+            <div style="margin-top:30px; border-top:1px dashed #ccc; padding-top:10px; text-align:center; font-size:10px;">
+                Computer Generated Receipt
+            </div>
         `;
-
         document.getElementById('inv1').innerHTML = content;
         document.getElementById('inv2').innerHTML = content;
         
-        const wrap = document.getElementById('printWrapper');
-        wrap.style.display = 'flex';
+        document.getElementById('printWrapper').style.display = 'flex';
         window.print();
-        wrap.style.display = 'none';
+        document.getElementById('printWrapper').style.display = 'none';
     }
 
     window.onload = fetchHistory;
