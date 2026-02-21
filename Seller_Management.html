@@ -92,8 +92,7 @@
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody id="sellerListBody">
-                </tbody>
+            <tbody id="sellerListBody"></tbody>
         </table>
     </div>
 </div>
@@ -101,7 +100,7 @@
 <script>
     // আপনার সুপাবেস কনফিগারেশন
     const _supabaseUrl = 'https://rounqtjnvgntetliprqy.supabase.co';
-    const _supabaseKey = 'sb_publishable_n4AovVgcPqcrBr1xqG19QA_H8KxB9tq';
+    const _supabaseKey = 'sb_publishable_n4AovVgcPqcrBr1xqG19QA_H8KxB9tq'; // আপনার দেওয়া ANON KEY
     const supabase = supabase.createClient(_supabaseUrl, _supabaseKey);
 
     // ১. সেলার সেভ করার ফাংশন
@@ -117,28 +116,23 @@
         };
 
         if(!sellerData.first_name || !sellerData.mobile) {
-            alert("দয়া করে নাম এবং মোবাইল নম্বর লিখুন।");
+            alert("দয়া করে নাম এবং মোবাইল নম্বর লিখুন।");
             return;
         }
 
-        // বাটন লোডিং স্টেট
         btn.disabled = true;
         btn.innerText = "Saving Data... Please Wait";
 
         try {
-            const { data, error } = await supabase
-                .from('parties')
-                .insert([sellerData]);
-
+            const { error } = await supabase.from('parties').insert([sellerData]);
             if (error) throw error;
 
             alert("Seller Added Successfully! ✅");
             document.getElementById('sellerForm').reset();
-            document.getElementById('state').value = "West Bengal"; // রিসেট করার পর ডিফল্ট স্টেট
+            document.getElementById('state').value = "West Bengal";
             fetchSellers();
         } catch (err) {
-            console.error(err);
-            alert("ভুল হয়েছে: " + err.message);
+            alert("ভুল হয়েছে: " + err.message);
         } finally {
             btn.disabled = false;
             btn.innerText = "SAVE SELLER DATA";
@@ -171,7 +165,7 @@
                         <td>${seller.mobile}</td>
                         <td>${seller.address || '-'}</td>
                         <td>${seller.state} (${seller.pin || '-'})</td>
-                        <td>₹ ${seller.set_price ? seller.set_price.toFixed(2) : '0.00'}</td>
+                        <td>₹ ${seller.set_price ? parseFloat(seller.set_price).toFixed(2) : '0.00'}</td>
                         <td class="action-btns">
                             <button class="edit-btn" onclick="editSeller('${seller.id}')">Edit</button>
                             <button class="del-btn" onclick="deleteSeller('${seller.id}')">Del</button>
@@ -186,77 +180,4 @@
 
     // ৩. সেলার ডিলিট করা
     async function deleteSeller(id) {
-        if (confirm("আপনি কি নিশ্চিতভাবে এই সেলারকে ডিলিট করতে চান?")) {
-            const { error } = await supabase.from('parties').delete().eq('id', id);
-            if (error) alert("ডিলিট করা সম্ভব হয়নি: " + error.message);
-            else fetchSellers();
-        }
-    }
-
-    // ৪. এডিট মোড (ডাটা ফর্মে আনা)
-    async function editSeller(id) {
-        const { data, error } = await supabase.from('parties').select('*').eq('id', id).single();
-        if (data) {
-            document.getElementById('sellerId').value = data.id;
-            document.getElementById('fullName').value = data.first_name;
-            document.getElementById('mobile').value = data.mobile;
-            document.getElementById('address').value = data.address;
-            document.getElementById('pin').value = data.pin;
-            document.getElementById('state').value = data.state;
-            document.getElementById('setPrice').value = data.set_price;
-            
-            // বাটন স্যুইচ
-            document.getElementById('submitBtn').style.display = 'none';
-            document.getElementById('updateBtn').style.display = 'block';
-            document.getElementById('formTitle').innerText = "Edit Seller Details";
-            document.getElementById('formTitle').style.color = "#2980b9";
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    }
-
-    // ৫. ডাটা আপডেট করা
-    async function updateSeller() {
-        const id = document.getElementById('sellerId').value;
-        const btn = document.getElementById('updateBtn');
-        
-        const updatedData = {
-            first_name: document.getElementById('fullName').value,
-            mobile: document.getElementById('mobile').value,
-            address: document.getElementById('address').value,
-            pin: document.getElementById('pin').value,
-            state: document.getElementById('state').value,
-            set_price: parseFloat(document.getElementById('setPrice').value) || 0
-        };
-
-        btn.disabled = true;
-        btn.innerText = "Updating...";
-
-        const { error } = await supabase.from('parties').update(updatedData).eq('id', id);
-        
-        if (error) {
-            alert("আপডেট হয়নি: " + error.message);
-        } else {
-            alert("Seller Data Updated! ✅");
-            cancelEdit();
-            fetchSellers();
-        }
-        btn.disabled = false;
-        btn.innerText = "UPDATE DATA";
-    }
-
-    // এডিট মোড বাতিল করা
-    function cancelEdit() {
-        document.getElementById('sellerForm').reset();
-        document.getElementById('state').value = "West Bengal";
-        document.getElementById('submitBtn').style.display = 'block';
-        document.getElementById('updateBtn').style.display = 'none';
-        document.getElementById('formTitle').innerText = "Add New Seller / Party";
-        document.getElementById('formTitle').style.color = "var(--dark)";
-    }
-
-    // পেজ লোড হলে লিস্ট দেখাবে
-    window.onload = fetchSellers;
-</script>
-
-</body>
-</html>
+        if (confirm("আপনি কি নিশ্চিতভাবে এই সে
