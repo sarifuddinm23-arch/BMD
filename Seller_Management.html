@@ -46,15 +46,15 @@
 </div>
 
 <div class="container">
-    <h3 id="formTitle" style="margin-top: 0; color: var(--dark);">Add New Seller / Party</h3>
+    <h3 id="formTitle" style="margin-top: 0; color: var(--dark);">Add New Oil Seller</h3>
     
     <form id="sellerForm">
         <input type="hidden" id="sellerId">
         
         <div class="form-grid">
             <div>
-                <label>Full Name *</label>
-                <input type="text" id="fullName" placeholder="Enter Name" required>
+                <label>Seller Full Name *</label>
+                <input type="text" id="fullName" placeholder="Enter Seller Name" required>
             </div>
             <div>
                 <label>Mobile Number *</label>
@@ -73,7 +73,7 @@
                 <input type="text" id="state" value="West Bengal">
             </div>
             <div>
-                <label>Set Special Price (Optional)</label>
+                <label>Special Rate per Ltr (Optional)</label>
                 <input type="number" id="setPrice" placeholder="₹ 0.00" step="0.01">
             </div>
         </div>
@@ -84,15 +84,15 @@
     </form>
 
     <div class="table-container">
-        <h3 style="color: var(--dark);">Registered Sellers List</h3>
+        <h3 style="color: var(--dark);">Registered Oil Sellers List</h3>
         <table id="sellerTable">
             <thead>
                 <tr>
-                    <th>Name</th>
+                    <th>Seller Name</th>
                     <th>Mobile</th>
                     <th>Address</th>
                     <th>State/Pin</th>
-                    <th>Price</th>
+                    <th>Rate/Ltr</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -116,7 +116,7 @@
         };
 
         if(!sellerData.first_name || !sellerData.mobile) {
-            alert("দয়া করে নাম এবং মোবাইল নম্বর লিখুন।");
+            alert("দয়া করে সেলারের নাম এবং মোবাইল নম্বর লিখুন।");
             return;
         }
 
@@ -124,11 +124,11 @@
         btn.innerText = "Saving...";
 
         try {
-            // 'supabase' ভেরিয়েবলটি config.js থেকে আসছে
-            const { error } = await supabase.from('parties').insert([sellerData]);
+            // 'supabaseClient' ভেরিয়েবলটি আপনার config.js থেকে আসছে
+            const { error } = await supabaseClient.from('parties').insert([sellerData]);
             if (error) throw error;
 
-            alert("সফলভাবে সেভ হয়েছে! ✅");
+            alert("সেলার ডাটা সফলভাবে সেভ হয়েছে! ✅");
             document.getElementById('sellerForm').reset();
             document.getElementById('state').value = "West Bengal";
             fetchSellers();
@@ -146,7 +146,7 @@
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Loading...</td></tr>';
 
         try {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('parties')
                 .select('*')
                 .order('created_at', { ascending: false });
@@ -177,7 +177,7 @@
     // ৩. ডিলিট করা
     async function deleteSeller(id) {
         if (confirm("আপনি কি নিশ্চিতভাবে এই সেলারকে ডিলিট করতে চান?")) {
-            const { error } = await supabase.from('parties').delete().eq('id', id);
+            const { error } = await supabaseClient.from('parties').delete().eq('id', id);
             if (error) alert(error.message);
             else fetchSellers();
         }
@@ -185,7 +185,7 @@
 
     // ৪. এডিট মোড
     async function editSeller(id) {
-        const { data, error } = await supabase.from('parties').select('*').eq('id', id).single();
+        const { data, error } = await supabaseClient.from('parties').select('*').eq('id', id).single();
         if (data) {
             document.getElementById('sellerId').value = data.id;
             document.getElementById('fullName').value = data.first_name;
@@ -198,7 +198,7 @@
             document.getElementById('submitBtn').style.display = 'none';
             document.getElementById('updateBtn').style.display = 'block';
             document.getElementById('cancelBtn').style.display = 'block';
-            document.getElementById('formTitle').innerText = "Edit Seller Details";
+            document.getElementById('formTitle').innerText = "Edit Oil Seller Details";
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }
@@ -219,11 +219,11 @@
         btn.disabled = true;
         btn.innerText = "Updating...";
 
-        const { error } = await supabase.from('parties').update(updatedData).eq('id', id);
+        const { error } = await supabaseClient.from('parties').update(updatedData).eq('id', id);
         if (error) {
             alert(error.message);
         } else {
-            alert("Updated Successfully! ✅");
+            alert("সেলার ডাটা আপডেট হয়েছে! ✅");
             cancelEdit();
             fetchSellers();
         }
@@ -237,7 +237,7 @@
         document.getElementById('submitBtn').style.display = 'block';
         document.getElementById('updateBtn').style.display = 'none';
         document.getElementById('cancelBtn').style.display = 'none';
-        document.getElementById('formTitle').innerText = "Add New Seller / Party";
+        document.getElementById('formTitle').innerText = "Add New Oil Seller";
     }
 
     // পেজ লোড হলে শুরু হবে
