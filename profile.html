@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,124 +9,156 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --primary: #f39c12; --dark: #1a1a1a; --bg: #f4f4f9; }
-        body { font-family: sans-serif; margin: 0; background: var(--bg); color: #333; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: var(--bg); color: #333; transition: 0.3s; }
         
+        /* Layout Modes */
+        .main-container { 
+            width: 95%; 
+            max-width: 450px; /* Default Mobile Width */
+            margin: 20px auto; 
+            transition: all 0.4s ease; 
+        }
+        .desktop-mode { max-width: 1200px !important; }
+
         /* UI Elements */
-        .no-print { padding: 15px; }
-        .top-bar { background: var(--dark); color: white; padding: 15px; display: flex; align-items: center; gap: 15px; }
-        .profile-card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; }
-        .profile-card img { width: 80px; height: 80px; border-radius: 50%; background: #eee; object-fit: cover; }
+        .no-print { padding: 0px; }
+        .top-bar { 
+            background: var(--dark); 
+            color: white; 
+            padding: 15px 20px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .view-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .profile-card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; text-align: center; }
+        .profile-card img { width: 90px; height: 90px; border-radius: 50%; background: #eee; object-fit: cover; border: 3px solid var(--bg); }
         
-        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .btn { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; }
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+        .btn { padding: 14px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); }
         .btn-bill { background: #2980b9; }
         .btn-pay { background: #27ae60; }
 
         /* Ledger Table */
-        .ledger-box { background: white; border-radius: 12px; overflow: hidden; margin-top: 20px; }
+        .ledger-box { background: white; border-radius: 12px; overflow: hidden; margin-top: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th { background: #eee; padding: 12px; text-align: left; }
-        td { padding: 12px; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; padding: 15px; text-align: left; color: #666; font-weight: 600; border-bottom: 2px solid #eee; }
+        td { padding: 15px; border-bottom: 1px solid #eee; }
 
-        /* --- A4 Print Styling --- */
-        #printable-invoice { display: none; width: 210mm; min-height: 297mm; padding: 20mm; margin: auto; background: white; box-sizing: border-box; }
-        
+        /* Print Styling */
+        #printable-invoice { display: none; width: 210mm; padding: 20mm; margin: auto; background: white; }
         @media print {
             body * { visibility: hidden; }
             #printable-invoice, #printable-invoice * { visibility: visible; }
             #printable-invoice { display: block !important; position: absolute; left: 0; top: 0; width: 100%; }
-            .no-print { display: none !important; }
         }
-
-        .inv-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-        .inv-details { display: flex; justify-content: space-between; margin-bottom: 30px; line-height: 1.6; }
-        .inv-table { width: 100%; border: 1px solid #000; border-collapse: collapse; }
-        .inv-table th, .inv-table td { border: 1px solid #000; padding: 10px; text-align: center; }
-        .total-section { margin-top: 20px; text-align: right; font-size: 18px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="no-print">
     <div class="top-bar">
-        <i class="fas fa-arrow-left" onclick="history.back()"></i>
-        <h2 id="headName" style="margin:0;">Loading...</h2>
-    </div>
-
-    <div class="profile-card">
-        <img id="profImg" src="https://ui-avatars.com/api/?name=User" alt="Profile">
-        <h2 id="userName" style="margin:10px 0 5px;">---</h2>
-        <p id="userContact" style="margin:0; color:#666;">---</p>
-        <p id="userAddress" style="font-size: 13px; color:#888;"></p>
-        
-        <div class="btn-group">
-            <button class="btn btn-bill" onclick="addEntry('bill')"><i class="fas fa-file-invoice"></i> পণ্য নেওয়া</button>
-            <button class="btn btn-pay" onclick="addEntry('payment')"><i class="fas fa-money-bill"></i> টাকা জমা</button>
+        <div style="display:flex; align-items:center; gap:15px;">
+            <i class="fas fa-arrow-left" onclick="history.back()" style="cursor:pointer;"></i>
+            <h3 id="headName" style="margin:0;">Loading...</h3>
         </div>
+        <button class="view-btn" onclick="toggleView()">
+            <i class="fas fa-desktop"></i> <span id="viewText">Desktop Mode</span>
+        </button>
     </div>
 
-    <div class="ledger-box">
-        <h3 style="padding: 15px; margin:0; border-bottom:1px solid #eee;">লেনদেনের ইতিহাস</h3>
-        <table id="ledgerTable">
-            <thead>
-                <tr>
-                    <th>তারিখ</th>
-                    <th>বিবরণ</th>
-                    <th>টাকা</th>
-                    <th>প্রিন্ট</th>
-                </tr>
-            </thead>
-            <tbody id="ledgerBody"></tbody>
-        </table>
+    <div class="main-container" id="layoutWrapper">
+        <div class="profile-card">
+            <img id="profImg" src="https://ui-avatars.com/api/?name=User" alt="Profile">
+            <h2 id="userName" style="margin:15px 0 5px;">---</h2>
+            <p id="userContact" style="margin:0; color:#666; font-size: 14px;">---</p>
+            <p id="userAddress" style="font-size: 13px; color:#888; margin-top: 5px;"></p>
+            
+            <div class="btn-group">
+                <button class="btn btn-bill" onclick="addEntry('bill')"><i class="fas fa-plus-circle"></i> Add Bill</button>
+                <button class="btn btn-pay" onclick="addEntry('payment')"><i class="fas fa-hand-holding-usd"></i> Add Payment</button>
+            </div>
+        </div>
+
+        <div class="ledger-box">
+            <h3 style="padding: 15px; margin:0; border-bottom:1px solid #eee; font-size: 16px;">Transaction History</h3>
+            <div style="overflow-x: auto;">
+                <table id="ledgerTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Amount</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ledgerBody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
 <div id="printable-invoice">
-    <div class="inv-header">
+    <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
         <h1 style="margin:0; letter-spacing: 5px;">INVOICE</h1>
         <p style="margin:5px 0;">BMD Business Management System</p>
     </div>
 
-    <div class="inv-details">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
         <div>
-            <strong>টু (To):</strong><br>
-            নাম: <span id="printName"></span><br>
-            ঠিকানা: <span id="printAddress"></span><br>
-            মোবাইল: <span id="printMobile"></span>
+            <strong>To:</strong><br>
+            Name: <span id="printName"></span><br>
+            Address: <span id="printAddress"></span><br>
+            Mobile: <span id="printMobile"></span>
         </div>
         <div style="text-align: right;">
-            <strong>ইনভয়েস তথ্য:</strong><br>
-            তারিখ: <span id="printDate"></span><br>
-            টাইপ: <span id="printType"></span>
+            <strong>Details:</strong><br>
+            Date: <span id="printDate"></span><br>
+            Type: <span id="printType"></span>
         </div>
     </div>
 
-    <table class="inv-table">
+    <table style="width: 100%; border: 1px solid #000; border-collapse: collapse;">
         <thead>
-            <tr>
-                <th>ক্রমিক</th>
-                <th>বিবরণ (Description)</th>
-                <th>পরিমাণ (Qty/Note)</th>
-                <th>মোট টাকা (Total)</th>
+            <tr style="background: #f0f0f0;">
+                <th style="border: 1px solid #000; padding: 10px;">SL</th>
+                <th style="border: 1px solid #000; padding: 10px;">Description</th>
+                <th style="border: 1px solid #000; padding: 10px;">Qty</th>
+                <th style="border: 1px solid #000; padding: 10px;">Total</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td>1</td>
-                <td id="tdDesc">---</td>
-                <td id="tdQty">---</td>
-                <td id="tdAmount">0.00</td>
+                <td style="border: 1px solid #000; padding: 10px; text-align: center;">1</td>
+                <td style="border: 1px solid #000; padding: 10px;" id="tdDesc">---</td>
+                <td style="border: 1px solid #000; padding: 10px; text-align: center;" id="tdQty">---</td>
+                <td style="border: 1px solid #000; padding: 10px; text-align: center;" id="tdAmount">0.00</td>
             </tr>
         </tbody>
     </table>
 
-    <div class="total-section">
-        সর্বমোট টাকা: ₹ <span id="finalTotal">0.00</span>
+    <div style="margin-top: 20px; text-align: right; font-size: 18px; font-weight: bold;">
+        Grand Total: ₹ <span id="finalTotal">0.00</span>
     </div>
 
-    <div style="margin-top: 50px; display: flex; justify-content: space-between;">
-        <div style="border-top: 1px solid #000; width: 150px; text-align: center;">গ্রাহকের স্বাক্ষর</div>
-        <div style="border-top: 1px solid #000; width: 150px; text-align: center;">কর্তৃপক্ষের স্বাক্ষর</div>
+    <div style="margin-top: 80px; display: flex; justify-content: space-between;">
+        <div style="border-top: 1px solid #000; width: 180px; text-align: center; padding-top: 5px;">Customer Signature</div>
+        <div style="border-top: 1px solid #000; width: 180px; text-align: center; padding-top: 5px;">Authorized Signature</div>
     </div>
 </div>
 
@@ -135,6 +167,19 @@
     const accId = urlParams.get('id');
     let currentUser = {};
 
+    // Toggle View Mode
+    function toggleView() {
+        const wrapper = document.getElementById('layoutWrapper');
+        const btnText = document.getElementById('viewText');
+        wrapper.classList.toggle('desktop-mode');
+        
+        if(wrapper.classList.contains('desktop-mode')) {
+            btnText.innerText = "Mobile Mode";
+        } else {
+            btnText.innerText = "Desktop Mode";
+        }
+    }
+
     async function loadProfile() {
         const { data, error } = await supabaseClient.from('accounts').select('*').eq('id', accId).single();
         if (data) {
@@ -142,20 +187,19 @@
             document.getElementById('userName').innerText = data.name;
             document.getElementById('headName').innerText = data.name;
             document.getElementById('userContact').innerText = data.mobile;
-            document.getElementById('userAddress').innerText = data.address || 'ঠিকানা নেই';
-            document.getElementById('profImg').src = `https://ui-avatars.com/api/?name=${data.name}&background=random`;
+            document.getElementById('userAddress').innerText = data.address || 'No Address Provided';
+            document.getElementById('profImg').src = `https://ui-avatars.com/api/?name=${data.name}&background=random&color=fff`;
             fetchLedger();
         }
     }
 
     async function fetchLedger() {
-        // Transactions (বিল) এবং Payments (টাকা জমা) উভয় ডাটা আনা
         const { data: bills } = await supabaseClient.from('transactions').select('*').eq('party_id', accId);
         const { data: pays } = await supabaseClient.from('payments').select('*').eq('party_id', accId);
 
         let combined = [
-            ...(bills || []).map(b => ({ ...b, sortDate: new Date(b.created_at), displayType: 'পণ্য নেওয়া', printType: 'Bill' })),
-            ...(pays || []).map(p => ({ ...p, sortDate: new Date(p.created_at), displayType: 'টাকা জমা', printType: 'Payment', net_total: p.amount, product: p.note || 'নগদ জমা' }))
+            ...(bills || []).map(b => ({ ...b, sortDate: new Date(b.created_at), displayType: 'Purchase', printType: 'Bill' })),
+            ...(pays || []).map(p => ({ ...p, sortDate: new Date(p.created_at), displayType: 'Payment', printType: 'Receipt', net_total: p.amount, product: p.note || 'Cash Deposit' }))
         ].sort((a, b) => b.sortDate - a.sortDate);
 
         const tbody = document.getElementById('ledgerBody');
@@ -164,39 +208,39 @@
             tbody.innerHTML += `
                 <tr>
                     <td>${item.sortDate.toLocaleDateString()}</td>
-                    <td>${item.displayType}<br><small>${item.product || ''}</small></td>
+                    <td><strong style="color: ${item.displayType === 'Payment' ? '#27ae60' : '#2980b9'}">${item.displayType}</strong><br><small style="color:#888">${item.product || ''}</small></td>
                     <td style="font-weight:bold;">₹ ${item.net_total || item.amount}</td>
-                    <td><button onclick='printBill(${JSON.stringify(item)})' style="background:none; border:none; color:blue; cursor:pointer;"><i class="fas fa-print"></i></button></td>
+                    <td><button onclick='printBill(${JSON.stringify(item)})' style="background:none; border:none; color:var(--primary); cursor:pointer; font-size:16px;"><i class="fas fa-print"></i></button></td>
                 </tr>`;
         });
     }
 
-    function addEntry(type) {
-        const amount = prompt("টাকার পরিমাণ লিখুন:");
-        if (!amount) return;
-        const note = prompt("বিবরণ বা পণ্যের নাম লিখুন:");
+    async function addEntry(type) {
+        const amount = prompt("Enter Amount:");
+        if (!amount || isNaN(amount)) return alert("Please enter a valid amount.");
+        const note = prompt("Enter Description/Product Name:");
 
         if (type === 'bill') {
-            supabaseClient.from('transactions').insert([{ party_id: accId, net_total: amount, product: note, due_amount: amount, qty: 1, rate: amount }]).then(() => fetchLedger());
+            await supabaseClient.from('transactions').insert([{ party_id: accId, net_total: amount, product: note, due_amount: amount, qty: 1, rate: amount }]);
         } else {
-            supabaseClient.from('payments').insert([{ party_id: accId, amount: amount, note: note, payment_type: 'took' }]).then(() => fetchLedger());
+            await supabaseClient.from('payments').insert([{ party_id: accId, amount: amount, note: note, payment_type: 'took' }]);
         }
+        fetchLedger();
     }
 
     function printBill(item) {
-        // পিন্ট করার আগে ইনভয়েস টেমপ্লেটে ডাটা বসানো
         document.getElementById('printName').innerText = currentUser.name;
         document.getElementById('printAddress').innerText = currentUser.address || '-';
         document.getElementById('printMobile').innerText = currentUser.mobile;
         document.getElementById('printDate').innerText = new Date(item.created_at).toLocaleDateString();
-        document.getElementById('printType').innerText = item.displayType;
+        document.getElementById('printType').innerText = item.printType;
         
-        document.getElementById('tdDesc').innerText = item.product || 'ব্যবসায়িক লেনদেন';
-        document.getElementById('tdQty').innerText = item.qty || '-';
+        document.getElementById('tdDesc').innerText = item.product || 'Business Transaction';
+        document.getElementById('tdQty').innerText = item.qty || '1';
         document.getElementById('tdAmount').innerText = item.net_total || item.amount;
         document.getElementById('finalTotal').innerText = item.net_total || item.amount;
 
-        window.print(); // এটি সরাসরি প্রিন্ট মেনু ওপেন করবে
+        window.print();
     }
 
     window.onload = loadProfile;
