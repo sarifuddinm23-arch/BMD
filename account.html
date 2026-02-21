@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMD - Manage Accounts</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root { --primary: #f39c12; --dark: #1a1a1a; --bg: #f4f4f9; }
+        body { font-family: sans-serif; margin: 0; background: var(--bg); transition: 0.3s; }
+        
+        .top-bar { background: var(--dark); padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white; position: sticky; top:0; z-index: 100; }
+        
+        /* Layout Modes */
+        .container { max-width: 500px; margin: 20px auto; padding: 0 15px; transition: 0.3s; }
+        .desktop-mode { max-width: 1000px !important; }
+
+        .account-card { background: white; padding: 15px; border-radius: 12px; display: flex; align-items: center; gap: 15px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .account-card img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: #eee; }
+        .account-info { flex-grow: 1; }
+        .account-info h3 { margin: 0; font-size: 16px; color: var(--dark); }
+        .account-info p { margin: 2px 0 0; font-size: 12px; color: #666; }
+
+        /* Floating Add Button */
+        .add-btn { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4); cursor: pointer; border: none; z-index: 200; }
+
+        /* Modal / Form Styling */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; width: 90%; max-width: 400px; padding: 25px; border-radius: 15px; position: relative; }
+        .close-modal { position: absolute; top: 15px; right: 15px; font-size: 20px; cursor: pointer; }
+
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 13px; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        
+        .preview-img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; display: block; margin: 10px auto; border: 2px solid var(--primary); }
+        
+        .btn-save { background: var(--primary); color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .mode-btn { background: #444; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <span onclick="window.location.href='index.html'" style="cursor:pointer;"><i class="fas fa-arrow-left"></i> ACCOUNTS</span>
+    <button class="mode-btn" onclick="toggleView()">Desktop Mode</button>
+</div>
+
+<div class="container" id="mainContainer">
+    <div id="accountList">
+        <p style="text-align:center; color:#888;">Loading accounts...</p>
+    </div>
+</div>
+
+<button class="add-btn" onclick="openModal()"><i class="fas fa-plus"></i></button>
+
+<div class="modal" id="accountModal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <h2 style="margin-top:0;">Add New Account</h2>
+        
+        <div style="text-align: center;">
+            <img id="imgPreview" src="https://via.placeholder.com/80" class="preview-img">
+            <input type="file" id="photoInput" accept="image/*" style="display:none;" onchange="previewFile()">
+            <button onclick="document.getElementById('photoInput').click()" style="font-size: 11px; background:none; border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Upload Photo</button>
+        </div>
+
+        <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="accName" placeholder="Enter name">
+        </div>
+        <div class="form-group">
+            <label>Mobile Number</label>
+            <input type="number" id="accMobile" placeholder="017xxxxxxxx">
+        </div>
+        <div class="form-group">
+            <label>Address</label>
+            <input type="text" id="accAddress" placeholder="Village, City">
+        </div>
+
+        <button class="btn-save" id="saveBtn" onclick="saveAccount()">SAVE ACCOUNT</button>
+    </div>
+</div>
+
+<script>
+    let isDesktop = false;
+
+    function toggleView() {
+        isDesktop = !isDesktop;
+        document.getElementById('mainContainer').classList.toggle('desktop-mode');
+        document.querySelector('.mode-btn').innerText = isDesktop ? "Mobile Mode" : "Desktop Mode";
+    }
+
+    function openModal() { document.getElementById('accountModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('accountModal').style.display = 'none'; }
+
+    // Image Preview Logic
+    function previewFile() {
+        const preview = document.getElementById('imgPreview');
+        const file = document.getElementById('photoInput').files[0];
+        const reader = new FileReader();
+        reader.onloadend = () => { preview.src = reader.result; }
+        if (file) { reader.readAsDataURL(file); }
+    }
+
+    async function fetchAccounts() {
+        const { data, error } = await supabaseClient
+            .from('parties')
+            .select('*')
+            .order('first_name', { ascending: true });
+
+        if (error) { console.error(error); return; }
+
+        const list = document.getElementById('accountList');
+        list.innerHTML = '';
+        
+        if(data.length === 0) {
+            list.innerHTML = '<p style="text-align:center; color:#888; margin-top:50px;">No accounts found.</p>';
+            return;
+        }
+
+        data.forEach(acc => {
+            const photo = acc.photo_url || 'https://via.placeholder.com/50';
+            list.innerHTML += `
+                <div class="account-card">
+                    <img src="${photo}" alt="profile">
+                    <div class="account-info">
+                        <h3>${acc.first_name}</h3>
+                        <p><i class="fas fa-phone"></i> ${acc.mobile} | <i class="fas fa-map-marker-alt"></i> ${acc.address || 'N/A'}</p>
+                    </div>
+                    <button onclick="deleteAccount('${acc.id}')" style="border:none; background:none; color:#e74c3c; cursor:pointer;"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+        });
+    }
+
+    async function saveAccount() {
+        const name = document.getElementById('accName').value;
+        const mobile = document.getElementById('accMobile').value;
+        const address = document.getElementById('accAddress').value;
+        const btn = document.getElementById('saveBtn');
+
+        if (!name || !mobile) { alert("নাম এবং মোবাইল নম্বর দিন!"); return; }
+
+        btn.disabled = true;
+        btn.innerText = "Saving...";
+
+        // Note: Photo handling normally requires Supabase Storage. 
+        // For simplicity, we are saving everything except actual storage upload here.
+        const { data, error } = await supabaseClient
+            .from('parties')
+            .insert([{ 
+                first_name: name, 
+                mobile: mobile, 
+                address: address 
+            }]);
+
+        if (error) {
+            alert("Error: " + error.message);
+        } else {
+            alert("Account Added! ✅");
+            closeModal();
+            fetchAccounts();
+            // Reset form
+            document.getElementById('accName').value = '';
+            document.getElementById('accMobile').value = '';
+            document.getElementById('accAddress').value = '';
+        }
+        btn.disabled = false;
+        btn.innerText = "SAVE ACCOUNT";
+    }
+
+    async function deleteAccount(id) {
+        if(confirm("Delete this account?")) {
+            await supabaseClient.from('parties').delete().eq('id', id);
+            fetchAccounts();
+        }
+    }
+
+    window.onload = fetchAccounts;
+</script>
+</body>
+</html>
