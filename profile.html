@@ -3,173 +3,194 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Account Profile - BMD</title>
+    <title>Professional Profile - BMD</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --primary: #f39c12; --dark: #1a1a1a; --bg: #f0f2f5; --white: #fff; --success: #27ae60; --danger: #e74c3c; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); transition: 0.3s; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); }
         
-        /* Top Bar */
-        .top-bar { 
-            background: var(--dark); color: white; padding: 12px 20px; 
-            display: flex; justify-content: space-between; align-items: center; 
-            position: sticky; top:0; z-index: 1000; 
-        }
-        .mode-btn { 
-            background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3);
-            padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 12px;
-        }
+        .top-bar { background: var(--dark); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; z-index: 1000; }
+        .mode-btn { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 12px; }
 
-        /* Container & Responsive Mode */
-        .container { width: 95%; max-width: 420px; margin: 15px auto; transition: all 0.4s ease; }
+        .container { width: 95%; max-width: 450px; margin: 15px auto; transition: 0.4s; }
         .desktop-view { max-width: 1000px !important; }
 
-        /* Profile Header */
-        .profile-card { background: var(--white); border-radius: 15px; padding: 20px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .profile-card h2 { margin: 10px 0 5px; font-size: 20px; }
-        .balance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .bal-item { padding: 10px; border-radius: 10px; background: #f8f9fa; }
-        .bal-item small { font-size: 10px; color: #777; font-weight: bold; }
-        .bal-item span { display: block; font-size: 15px; font-weight: bold; }
+        /* Live Summary Card */
+        .live-card { background: var(--dark); color: white; border-radius: 15px; padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .live-item small { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        .live-item span { display: block; font-size: 18px; font-weight: bold; margin-top: 5px; }
 
-        /* 4 Action Icons Grid */
-        .action-grid { 
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; 
-        }
-        .action-btn { 
-            background: var(--white); padding: 15px 5px; border-radius: 12px; text-align: center;
-            text-decoration: none; color: var(--dark); font-size: 10px; font-weight: bold;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: 0.2s;
-        }
-        .action-btn:active { transform: scale(0.95); }
+        /* Action Grid */
+        .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .action-btn { background: var(--white); padding: 15px 5px; border-radius: 12px; text-align: center; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05); font-size: 10px; font-weight: bold; transition: 0.2s; border: none; }
         .action-btn i { display: block; font-size: 20px; margin-bottom: 8px; }
         .action-btn.receive i { color: #2980b9; }
         .action-btn.sell i { color: #e67e22; }
         .action-btn.pay-in i { color: var(--success); }
         .action-btn.pay-out i { color: var(--danger); }
 
+        /* Modal / Pop-up Windows */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-content { background: white; width: 90%; max-width: 400px; padding: 20px; border-radius: 15px; position: relative; }
+        .close-modal { position: absolute; right: 15px; top: 15px; font-size: 20px; cursor: pointer; }
+        
+        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .btn-submit { width: 100%; padding: 15px; background: var(--dark); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
         /* Statement Table */
         .statement-card { background: var(--white); border-radius: 15px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .table-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th { background: #f8f9fa; padding: 12px 10px; text-align: left; color: #666; }
-        td { padding: 12px 10px; border-bottom: 1px solid #f1f1f1; }
+        th { background: #f8f9fa; padding: 12px; text-align: left; }
+        td { padding: 12px; border-bottom: 1px solid #f1f1f1; }
+        .invoice-btn { color: var(--primary); cursor: pointer; font-size: 16px; }
 
-        @media print {
-            .top-bar, .action-grid, .mode-btn { display: none !important; }
-            .container { max-width: 100% !important; width: 100%; margin: 0; }
-            .statement-card { box-shadow: none; }
-        }
+        @media print { .top-bar, .action-grid, .mode-btn { display: none; } }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <div onclick="history.back()" style="cursor:pointer;"><i class="fas fa-arrow-left"></i> PROFILE</div>
-    <button class="mode-btn" onclick="toggleMode()"><i class="fas fa-desktop"></i> Desktop Mode</button>
+    <div onclick="history.back()"><i class="fas fa-arrow-left"></i> <span id="userNameHeader">Account</span></div>
+    <button class="mode-btn" onclick="toggleMode()"><i class="fas fa-desktop"></i> Mode</button>
 </div>
 
 <div class="container" id="mainWrapper">
     
-    <div class="profile-card">
-        <i class="fas fa-user-circle fa-3x" style="color: #ddd;"></i>
-        <h2 id="userName">Loading...</h2>
-        <div class="balance-grid">
-            <div class="bal-item">
-                <small>TOTAL PAID</small>
-                <span id="txtPaid" style="color: var(--success);">₹ 0</span>
-            </div>
-            <div class="bal-item">
-                <small>NET DUE</small>
-                <span id="txtDue" style="color: var(--danger);">₹ 0</span>
-            </div>
+    <div class="live-card">
+        <div class="live-item">
+            <small>Stock Received</small>
+            <span id="liveReceived">0 Units</span>
+        </div>
+        <div class="live-item">
+            <small>Total Sold</small>
+            <span id="liveSold">0 Units</span>
+        </div>
+        <div class="live-item">
+            <small>Total Paid In</small>
+            <span id="livePayIn">₹ 0</span>
+        </div>
+        <div class="live-item">
+            <small>Total Paid Out</small>
+            <span id="livePayOut">₹ 0</span>
         </div>
     </div>
 
     <div class="action-grid">
-        <a href="#" class="action-btn receive" onclick="alert('Open Receive Form')">
-            <i class="fas fa-truck-loading"></i> RECEIVE
-        </a>
-        <a href="#" class="action-btn sell" onclick="alert('Open Sell Form')">
-            <i class="fas fa-shopping-cart"></i> SELL
-        </a>
-        <a href="#" class="action-btn pay-in" onclick="alert('Open Payment In Form')">
-            <i class="fas fa-hand-holding-usd"></i> PAY-IN
-        </a>
-        <a href="#" class="action-btn pay-out" onclick="alert('Open Payment Out Form')">
-            <i class="fas fa-file-invoice-dollar"></i> PAY-OUT
-        </a>
+        <button class="action-btn receive" onclick="openModal('receiveModal')"><i class="fas fa-truck-loading"></i> RECEIVE</button>
+        <button class="action-btn sell" onclick="openModal('sellModal')"><i class="fas fa-shopping-cart"></i> SELL</button>
+        <button class="action-btn pay-in" onclick="openModal('payInModal')"><i class="fas fa-camera"></i> PAY-IN</button>
+        <button class="action-btn pay-out" onclick="openModal('payOutModal')"><i class="fas fa-wallet"></i> PAY-OUT</button>
     </div>
 
     <div class="statement-card">
-        <div class="table-header">
-            <span style="font-weight: bold;"><i class="fas fa-list"></i> STATEMENT</span>
-            <button onclick="window.print()" style="padding: 5px 10px; cursor: pointer;"><i class="fas fa-print"></i> Print</button>
+        <div style="padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between;">
+            <b><i class="fas fa-file-invoice"></i> ACCOUNT HISTORY</b>
+            <button onclick="window.print()"><i class="fas fa-print"></i></button>
         </div>
         <table>
             <thead>
                 <tr>
                     <th>Date</th>
-                    <th>Product/Note</th>
-                    <th>Type</th>
-                    <th>Amount</th>
+                    <th>Details</th>
+                    <th>Amt/Qty</th>
+                    <th>Inv</th>
                 </tr>
             </thead>
-            <tbody id="statementData">
-                </tbody>
+            <tbody id="historyBody"></tbody>
         </table>
     </div>
+</div>
 
+<div id="receiveModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModals()">&times;</span>
+        <h3 id="modalTitle">Add Stock</h3>
+        <input type="text" id="p_name" placeholder="Product Name">
+        <div style="display:flex; gap:10px;">
+            <input type="number" id="qty" placeholder="Quantity" oninput="calculateTotal()">
+            <select id="unit"><option>KG</option><option>Liter</option><option>Pics</option></select>
+        </div>
+        <input type="number" id="rate" placeholder="Price Per Unit" oninput="calculateTotal()">
+        <input type="number" id="total" placeholder="Total Price" readonly style="background:#f9f9f9">
+        <button class="btn-submit" onclick="submitStock()">ENTER DATA</button>
+    </div>
+</div>
+
+<div id="payInModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModals()">&times;</span>
+        <h3>Payment Upload</h3>
+        <input type="number" id="pay_amt" placeholder="Enter Amount">
+        <label style="font-size: 12px; color: #666;">Upload Bank Slip/Screenshot:</label>
+        <input type="file" id="slip" accept="image/*" capture="camera">
+        <button class="btn-submit" onclick="submitPayment()">CONFIRM PAYMENT</button>
+    </div>
 </div>
 
 <script>
-    function toggleMode() {
-        document.getElementById('mainWrapper').classList.toggle('desktop-view');
+    let currentType = '';
+    const userId = new URLSearchParams(window.location.search).get('id');
+
+    function toggleMode() { document.getElementById('mainWrapper').classList.toggle('desktop-view'); }
+
+    function openModal(id) { 
+        document.getElementById(id).style.display = 'flex'; 
+        currentType = id.includes('receive') ? 'receive' : 'sell';
+        document.getElementById('modalTitle').innerText = currentType.toUpperCase();
     }
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const userId = urlParams.get('id');
+    function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
 
-    async function loadData() {
-        if(!userId) return;
+    function calculateTotal() {
+        const q = document.getElementById('qty').value;
+        const r = document.getElementById('rate').value;
+        document.getElementById('total').value = (q * r) || 0;
+    }
 
-        // 1. User Info Load
-        const { data: user } = await supabaseClient.from('accounts').select('name').eq('id', userId).single();
-        if(user) document.getElementById('userName').innerText = user.name;
+    async function submitStock() {
+        const payload = {
+            party_id: userId,
+            product_name: document.getElementById('p_name').value,
+            qty: document.getElementById('qty').value,
+            unit: document.getElementById('unit').value,
+            rate: document.getElementById('rate').value,
+            net_total: document.getElementById('total').value,
+            mother_category: currentType // receive or sell
+        };
+        await supabaseClient.from('transactions').insert([payload]);
+        location.reload();
+    }
 
-        // 2. Transactions Load
-        const { data: trans } = await supabaseClient.from('transactions')
-            .select('*')
-            .eq('party_id', userId)
-            .order('created_at', { ascending: false });
+    async function loadHistory() {
+        const { data: trans } = await supabaseClient.from('transactions').select('*').eq('party_id', userId).order('created_at', {ascending: false});
+        let html = '';
+        let rec = 0, sel = 0, pi = 0, po = 0;
 
-        let tableHtml = '';
-        let totalPaid = 0;
-        let totalDue = 0;
-
-        trans.forEach(row => {
-            totalPaid += parseFloat(row.paid_amount || 0);
-            totalDue += parseFloat(row.due_amount || 0);
-
-            tableHtml += `
-                <tr>
-                    <td>${new Date(row.created_at).toLocaleDateString()}</td>
-                    <td>${row.product_name || 'Cash Entry'}</td>
-                    <td><b>${row.mother_category || 'Payment'}</b></td>
-                    <td>₹ ${row.net_total || row.paid_amount}</td>
-                </tr>
-            `;
+        trans.forEach(t => {
+            if(t.mother_category === 'receive') rec += parseFloat(t.qty || 0);
+            if(t.mother_category === 'sell') sel += parseFloat(t.qty || 0);
+            
+            html += `<tr>
+                <td>${new Date(t.created_at).toLocaleDateString()}</td>
+                <td>${t.product_name || 'Payment'}</td>
+                <td>${t.qty || ''} ${t.unit || ''} / ₹${t.net_total || 0}</td>
+                <td><i class="fas fa-file-pdf invoice-btn" onclick="downloadInvoice('${t.id}')"></i></td>
+            </tr>`;
         });
 
-        document.getElementById('statementData').innerHTML = tableHtml || '<tr><td colspan="4" style="text-align:center">No Data Found</td></tr>';
-        document.getElementById('txtPaid').innerText = "₹ " + totalPaid.toLocaleString();
-        document.getElementById('txtDue').innerText = "₹ " + totalDue.toLocaleString();
+        document.getElementById('historyBody').innerHTML = html;
+        document.getElementById('liveReceived').innerText = rec + " Units";
+        document.getElementById('liveSold').innerText = sel + " Units";
     }
 
-    window.onload = loadData;
-</script>
+    function downloadInvoice(id) {
+        alert("Generating Invoice for ID: " + id + "\n Ready for 4x6 Print.");
+    }
 
+    window.onclick = (e) => { if(e.target.className === 'modal') closeModals(); }
+    window.onload = loadHistory;
+</script>
 </body>
 </html>
