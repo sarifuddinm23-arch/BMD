@@ -12,7 +12,6 @@
         body { font-family: sans-serif; margin: 0; background: var(--bg); }
         .top-bar { background: var(--dark); padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white; position: sticky; top:0; z-index: 100; }
         
-        /* Summary Dashboard */
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 15px; }
         .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
         .card h4 { margin: 0; font-size: 12px; color: #666; text-transform: uppercase; }
@@ -22,26 +21,38 @@
         #searchInput { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; }
 
         .table-container { background: white; margin: 10px; border-radius: 8px; overflow-x: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 600px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 800px; }
         th { background: #eee; padding: 12px; text-align: left; position: sticky; top: 0; }
         td { padding: 12px; border-bottom: 1px solid #eee; }
 
-        /* Status Colors */
         .type-sell { color: #e67e22; font-weight: bold; }
         .type-receive { color: #27ae60; font-weight: bold; }
 
-        .action-btns { display: flex; gap: 5px; }
-        .btn { border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; color: white; font-size: 12px; }
+        .action-btns { display: flex; gap: 8px; align-items: center; }
+        .btn { border: none; padding: 8px; border-radius: 4px; cursor: pointer; color: white; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; }
         .btn-edit { background: #3498db; }
         .btn-del { background: #e74c3c; }
         .btn-print { background: #2ecc71; }
+        .btn-wa { background: #25D366; }
 
-        /* Print Style 4x6 inch */
+        /* A4 Layout for 2 Invoices */
         @media print {
             body * { visibility: hidden; }
-            #printArea, #printArea * { visibility: visible; }
-            #printArea { position: absolute; left: 0; top: 0; width: 4in; height: 6in; padding: 10px; background: white; }
-            .no-print { display: none; }
+            #printWrapper, #printWrapper * { visibility: visible; }
+            #printWrapper { 
+                position: absolute; left: 0; top: 0; width: 210mm; 
+                display: flex !important; justify-content: space-between; 
+                background: white; padding: 0;
+            }
+            .invoice-box { 
+                width: 100mm; height: 150mm; border: 1px solid #000; 
+                padding: 15mm; box-sizing: border-box; position: relative;
+            }
+            .cutter-line { 
+                border-left: 1px dashed #000; height: 150mm; 
+                margin: 0 auto; width: 1px;
+            }
+            .no-print { display: none !important; }
         }
     </style>
 </head>
@@ -53,22 +64,10 @@
 </div>
 
 <div class="summary-grid">
-    <div class="card" style="border-bottom: 4px solid #3498db;">
-        <h4>Total Qty</h4>
-        <p id="sumQty">0.00</p>
-    </div>
-    <div class="card" style="border-bottom: 4px solid #2ecc71;">
-        <h4>Net Amount</h4>
-        <p id="sumNet">₹ 0.00</p>
-    </div>
-    <div class="card" style="border-bottom: 4px solid #f1c40f;">
-        <h4>Paid</h4>
-        <p id="sumPaid">₹ 0.00</p>
-    </div>
-    <div class="card" style="border-bottom: 4px solid #e74c3c;">
-        <h4>Total Due</h4>
-        <p id="sumDue">₹ 0.00</p>
-    </div>
+    <div class="card" style="border-bottom: 4px solid #3498db;"><h4>Total Qty</h4><p id="sumQty">0.00</p></div>
+    <div class="card" style="border-bottom: 4px solid #2ecc71;"><h4>Net Amount</h4><p id="sumNet">₹ 0.00</p></div>
+    <div class="card" style="border-bottom: 4px solid #f1c40f;"><h4>Paid</h4><p id="sumPaid">₹ 0.00</p></div>
+    <div class="card" style="border-bottom: 4px solid #e74c3c;"><h4>Total Due</h4><p id="sumDue">₹ 0.00</p></div>
 </div>
 
 <div class="search-container">
@@ -89,58 +88,40 @@
                 <th class="no-print">Actions</th>
             </tr>
         </thead>
-        <tbody id="transListBody">
-            </tbody>
+        <tbody id="transListBody"></tbody>
     </table>
 </div>
 
-<div id="printArea" style="display:none;">
-    <h2 style="text-align:center; margin-bottom:5px;">BMD OIL TRADERS</h2>
-    <hr>
-    <p id="invDate"></p>
-    <p><strong>Customer/Seller:</strong> <span id="invName"></span></p>
-    <p><strong>Product:</strong> <span id="invProd"></span></p>
-    <hr>
-    <div style="display:flex; justify-content: space-between;">
-        <span>Qty: <span id="invQty"></span></span>
-        <span>Rate: <span id="invRate"></span></span>
-    </div>
-    <h3>Total Bill: ₹ <span id="invTotal"></span></h3>
-    <p>Paid: ₹ <span id="invPaid"></span></p>
-    <p style="color:red">Due: ₹ <span id="invDue"></span></p>
-    <hr>
-    <p style="text-align:center; font-size:12px;">ধন্যবাদ, আবার আসবেন।</p>
+<div id="printWrapper" style="display:none;">
+    <div class="invoice-box" id="inv1"></div>
+    <div class="cutter-line"></div>
+    <div class="invoice-box" id="inv2"></div>
 </div>
 
 <script>
     let allData = [];
 
-    // ১. ডাটা লোড করা
     async function fetchHistory() {
         const { data, error } = await supabaseClient
             .from('transactions')
-            .select('*, parties(first_name)')
+            .select('*, parties(first_name, mobile)')
             .order('created_at', { ascending: false });
 
-        if (error) {
-            alert("Error: " + error.message);
-            return;
-        }
-
+        if (error) { alert(error.message); return; }
         allData = data;
         displayData(allData);
         calculateSummary(allData);
     }
 
-    // ২. ডাটা টেবিল প্রদর্শন
     function displayData(data) {
         const tbody = document.getElementById('transListBody');
         tbody.innerHTML = '';
 
         data.forEach(item => {
+            const waMsg = encodeURIComponent(`*INVOICE*\nDate: ${new Date(item.created_at).toLocaleDateString()}\nProduct: ${item.product}\nTotal: ₹${item.net_total}\nDue: ₹${item.due_amount}`);
             const row = `
                 <tr>
-                    <td>${new Date(item.created_at).toLocaleDateString('bn-BD')}</td>
+                    <td>${new Date(item.created_at).toLocaleDateString()}</td>
                     <td>${item.parties?.first_name || 'N/A'}</td>
                     <td class="type-${item.type}">${item.type === 'sell' ? 'বিক্রি' : 'ক্রয়'}</td>
                     <td>${item.product}</td>
@@ -148,7 +129,9 @@
                     <td>₹${item.net_total.toFixed(2)}</td>
                     <td style="color:red">₹${item.due_amount.toFixed(2)}</td>
                     <td class="action-btns no-print">
-                        <button class="btn btn-print" onclick="printInvoice('${item.id}')">🖨️</button>
+                        <a href="https://wa.me/91${item.parties?.mobile}?text=${waMsg}" target="_blank" class="btn btn-wa">🟢</a>
+                        <button class="btn btn-print" onclick="preparePrint('${item.id}')">🖨️</button>
+                        <button class="btn btn-edit" onclick="window.location.href='edit_transaction.html?id=${item.id}'">✏️</button>
                         <button class="btn btn-del" onclick="deleteEntry('${item.id}')">🗑️</button>
                     </td>
                 </tr>
@@ -157,22 +140,15 @@
         });
     }
 
-    // ৩. সামারি হিসাব করা
     function calculateSummary(data) {
         let tQty = 0, tNet = 0, tPaid = 0, tDue = 0;
-        data.forEach(i => {
-            tQty += i.qty;
-            tNet += i.net_total;
-            tPaid += i.paid_amount;
-            tDue += i.due_amount;
-        });
+        data.forEach(i => { tQty += i.qty; tNet += i.net_total; tPaid += i.paid_amount; tDue += i.due_amount; });
         document.getElementById('sumQty').innerText = tQty.toFixed(2);
-        document.getElementById('sumNet').innerText = formatINR(tNet);
-        document.getElementById('sumPaid').innerText = formatINR(tPaid);
-        document.getElementById('sumDue').innerText = formatINR(tDue);
+        document.getElementById('sumNet').innerText = tNet.toFixed(2);
+        document.getElementById('sumPaid').innerText = tPaid.toFixed(2);
+        document.getElementById('sumDue').innerText = tDue.toFixed(2);
     }
 
-    // ৪. সার্চ ফিল্টার
     function filterTable() {
         const query = document.getElementById('searchInput').value.toLowerCase();
         const filtered = allData.filter(item => 
@@ -182,33 +158,43 @@
         displayData(filtered);
     }
 
-    // ৫. ডিলিট ফাংশন
     async function deleteEntry(id) {
-        if(confirm("আপনি কি নিশ্চিতভাবে এই রেকর্ডটি ডিলিট করতে চান?")) {
-            const { error } = await supabaseClient.from('transactions').delete().eq('id', id);
-            if(error) alert(error.message);
-            else fetchHistory();
+        if(confirm("ডিলিট করতে চান?")) {
+            await supabaseClient.from('transactions').delete().eq('id', id);
+            fetchHistory();
         }
     }
 
-    // ৬. ইনভয়েস প্রিন্ট (4*6 Inch)
-    function printInvoice(id) {
-        const item = allData.find(i => i.id === id);
-        if(!item) return;
+    function preparePrint(id) {
+        const t = allData.find(i => i.id === id);
+        if(!t) return;
 
-        document.getElementById('invDate').innerText = "Date: " + new Date(item.created_at).toLocaleString();
-        document.getElementById('invName').innerText = item.parties?.first_name || 'N/A';
-        document.getElementById('invProd').innerText = item.product;
-        document.getElementById('invQty').innerText = item.qty;
-        document.getElementById('invRate').innerText = "₹" + item.rate;
-        document.getElementById('invTotal').innerText = item.net_total.toFixed(2);
-        document.getElementById('invPaid').innerText = item.paid_amount.toFixed(2);
-        document.getElementById('invDue').innerText = item.due_amount.toFixed(2);
+        const content = `
+            <div style="text-align:center; border-bottom:1px solid #000; margin-bottom:10px; padding-bottom:5px;">
+                <h2 style="margin:0; letter-spacing:2px;">INVOICE</h2>
+            </div>
+            <p style="font-size:12px;"><strong>Date:</strong> ${new Date(t.created_at).toLocaleString()}</p>
+            <p><strong>Party:</strong> ${t.parties?.first_name || 'N/A'}</p>
+            <p><strong>Product:</strong> ${t.product}</p>
+            <hr>
+            <div style="display:flex; justify-content: space-between;">
+                <span>Qty: ${t.qty}</span>
+                <span>Rate: ₹${t.rate}</span>
+            </div>
+            <h3 style="margin: 15px 0 5px 0;">Total: ₹${t.net_total.toFixed(2)}</h3>
+            <p style="margin:0;">Paid: ₹${t.paid_amount.toFixed(2)}</p>
+            <p style="color:red; margin:5px 0;">Due: ₹${t.due_amount.toFixed(2)}</p>
+            <hr style="border:0.5px dashed #ccc;">
+            <p style="text-align:center; font-size:10px; margin-top:20px;">System Generated Invoice</p>
+        `;
 
-        const printDiv = document.getElementById('printArea');
-        printDiv.style.display = 'block';
+        document.getElementById('inv1').innerHTML = content;
+        document.getElementById('inv2').innerHTML = content;
+        
+        const wrap = document.getElementById('printWrapper');
+        wrap.style.display = 'flex';
         window.print();
-        printDiv.style.display = 'none';
+        wrap.style.display = 'none';
     }
 
     window.onload = fetchHistory;
