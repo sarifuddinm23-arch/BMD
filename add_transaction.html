@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Transaction - BMD</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary: #f39c12; --dark: #1a1a1a; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 50px; }
+        
+        .top-bar { background: var(--dark); color: white; padding: 15px; display: flex; align-items: center; gap: 10px; sticky: top; }
+        
+        /* Live Summary Box */
+        .live-summary { 
+            background: var(--dark); color: white; margin: 15px; padding: 20px; 
+            border-radius: 15px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .sum-card { text-align: center; }
+        .sum-card small { font-size: 10px; color: #bbb; text-transform: uppercase; }
+        .sum-card span { display: block; font-size: 14px; font-weight: bold; margin-top: 5px; }
+
+        /* Form Styling */
+        .form-box { background: white; margin: 15px; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .input-group { margin-bottom: 15px; }
+        label { font-size: 12px; font-weight: bold; color: #666; display: block; margin-bottom: 5px; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-save { background: var(--primary); color: white; border: none; width: 100%; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; }
+        
+        /* Auto Calculation Highlight */
+        .highlight { background: #fff9e6; border: 1px solid #ffeeba; }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <i class="fas fa-arrow-left" onclick="history.back()"></i>
+    <span>NEW TRANSACTION</span>
+</div>
+
+<div class="live-summary">
+    <div class="sum-card">
+        <small>Total Qty</small>
+        <span id="liveQty">0</span>
+    </div>
+    <div class="sum-card">
+        <small>Total Paid</small>
+        <span id="livePaid">₹ 0</span>
+    </div>
+    <div class="sum-card" style="color: #ff7675;">
+        <small>Due Bal</small>
+        <span id="liveDue">₹ 0</span>
+    </div>
+</div>
+
+<div class="form-box">
+    <div class="input-group">
+        <label>Transaction Type</label>
+        <select id="t_type">
+            <option value="receive">Received (Purchase)</option>
+            <option value="sell">Sell</option>
+            <option value="pay_in">Payment Received</option>
+            <option value="pay_out">Payment Payout</option>
+        </select>
+    </div>
+
+    <div class="grid-2">
+        <div class="input-group">
+            <label>Mother Category</label>
+            <select id="m_cat"><option>Oil</option><option>Rice</option></select>
+        </div>
+        <div class="input-group">
+            <label>Category</label>
+            <select id="cat"><option>Mustard Oil</option></select>
+        </div>
+    </div>
+
+    <div class="input-group">
+        <label>Product Name</label>
+        <select id="p_name"><option>Fortune 1L</option></select>
+    </div>
+
+    <div class="grid-2">
+        <div class="input-group">
+            <label>Unit</label>
+            <select id="unit">
+                <option>PICS</option>
+                <option>LITER</option>
+                <option>KG</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>Quantity</label>
+            <input type="number" id="qty" placeholder="0" oninput="calculate()">
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="input-group">
+            <label>Price Per Unit (MRP)</label>
+            <input type="number" id="rate" placeholder="₹" oninput="calculate()">
+        </div>
+        <div class="input-group">
+            <label>Total Price</label>
+            <input type="number" id="total" class="highlight" readonly placeholder="₹ 0">
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="input-group">
+            <label>Paid Amount</label>
+            <input type="number" id="paid" placeholder="₹ 0" oninput="calculate()">
+        </div>
+        <div class="input-group">
+            <label>Due Balance</label>
+            <input type="number" id="due" class="highlight" style="color:red" readonly placeholder="₹ 0">
+        </div>
+    </div>
+
+    <button class="btn-save" onclick="saveData()">SAVE TRANSACTION</button>
+</div>
+
+<script>
+    function calculate() {
+        const qty = parseFloat(document.getElementById('qty').value) || 0;
+        const rate = parseFloat(document.getElementById('rate').value) || 0;
+        const paid = parseFloat(document.getElementById('paid').value) || 0;
+        
+        const total = qty * rate;
+        const due = total - paid;
+        
+        document.getElementById('total').value = total.toFixed(2);
+        document.getElementById('due').value = due.toFixed(2);
+        
+        // Live Update Box
+        document.getElementById('liveQty').innerText = qty;
+        document.getElementById('livePaid').innerText = "₹ " + paid;
+        document.getElementById('liveDue').innerText = "₹ " + due;
+    }
+
+    async function saveData() {
+        const btn = document.querySelector('.btn-save');
+        btn.innerText = "Saving...";
+        
+        const payload = {
+            party_id: new URLSearchParams(window.location.search).get('id'),
+            mother_category: document.getElementById('m_cat').value,
+            category: document.getElementById('cat').value,
+            product: document.getElementById('p_name').value,
+            unit: document.getElementById('unit').value,
+            qty: document.getElementById('qty').value,
+            rate: document.getElementById('rate').value,
+            net_total: document.getElementById('total').value,
+            paid_amount: document.getElementById('paid').value,
+            due_amount: document.getElementById('due').value,
+            created_at: new Date()
+        };
+
+        const { error } = await supabaseClient.from('transactions').insert([payload]);
+        
+        if(error) {
+            alert("Error: " + error.message);
+        } else {
+            alert("Transaction Saved Successfully! ✅");
+            window.location.href = `profile.html?id=${payload.party_id}`;
+        }
+        btn.innerText = "SAVE TRANSACTION";
+    }
+</script>
+</body>
+</html>
