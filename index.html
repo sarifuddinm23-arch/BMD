@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,7 +17,7 @@
         body {
             font-family: 'Segoe UI', Roboto, sans-serif; margin: 0;
             background-color: var(--bg); display: flex; flex-direction: column;
-            align-items: center; color: #333;
+            align-items: center; color: #333; transition: 0.3s;
         }
 
         .top-bar {
@@ -30,6 +30,7 @@
         .mode-btn {
             background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3);
             padding: 6px 15px; border-radius: 20px; cursor: pointer; font-size: 13px;
+            display: flex; align-items: center; gap: 8px;
         }
 
         .phone-frame {
@@ -68,11 +69,15 @@
             border-radius: 15px; text-decoration: none; color: var(--dark);
             display: flex; flex-direction: column; gap: 8px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: 0.3s;
+            border: 1px solid transparent;
         }
 
-        .box:hover { transform: translateY(-3px); background: var(--primary); color: white; }
-        .box i { font-size: 20px; }
-        .box span { font-size: 13px; font-weight: 600; }
+        .box:hover { transform: translateY(-3px); border-color: var(--primary); color: var(--primary); }
+        .box i { font-size: 22px; }
+        .box span { font-size: 12px; font-weight: bold; text-transform: uppercase; }
+
+        /* Data Page Special Style */
+        .box.data-box { background: #fff3e0; border: 1px dashed var(--primary); }
 
         .footer-info { font-size: 11px; color: #aaa; margin-top: 30px; padding: 20px; text-align: center; }
     </style>
@@ -81,7 +86,9 @@
 
     <div class="top-bar">
         <span style="color: white; font-weight: bold;"><i class="fas fa-industry"></i> BMD Manager</span>
-        <button class="mode-btn" onclick="toggleView()">🖥️ View Mode</button>
+        <button class="mode-btn" onclick="toggleView()">
+            <i class="fas fa-desktop"></i> <span id="viewModeText">Desktop Mode</span>
+        </button>
     </div>
 
     <div class="phone-frame" id="mainFrame">
@@ -92,75 +99,76 @@
         <div class="stats-grid">
             <div class="stat-card received">
                 <span class="stat-label">Total Received</span>
-                <span class="stat-value" id="totalReceived">₹ 0</span>
+                <span class="stat-value" id="totalReceived">₹ 0.00</span>
             </div>
             <div class="stat-card payment">
                 <span class="stat-label">Total Paid</span>
-                <span class="stat-value" id="totalPayment">₹ 0</span>
+                <span class="stat-value" id="totalPayment">₹ 0.00</span>
             </div>
             <div class="stat-card balance">
                 <span class="stat-label">Net Cash</span>
-                <span class="stat-value" id="totalPrice">₹ 0</span>
+                <span class="stat-value" id="totalPrice">₹ 0.00</span>
             </div>
             <div class="stat-card due">
-                <span class="stat-label">Total Outstanding Due</span>
-                <span class="stat-value" id="paymentStatus" style="color: var(--danger);">₹ 0</span>
+                <span class="stat-label">Total Due</span>
+                <span class="stat-value" id="paymentStatus" style="color: var(--danger);">₹ 0.00</span>
             </div>
         </div>
 
         <div class="grid-container">
-            <a href="account.html" class="box" style="border: 2px solid var(--primary);">
-                <i class="fas fa-users-cog"></i>
-                <span>ACCOUNTS</span>
+            <a href="account.html" class="box">
+                <i class="fas fa-users" style="color: #3498db;"></i>
+                <span>Accounts</span>
             </a>
             <a href="Transactions.html" class="box">
-                <i class="fas fa-plus-circle"></i>
-                <span>QUICK BILL</span>
+                <i class="fas fa-file-invoice-dollar" style="color: #e67e22;"></i>
+                <span>Quick Bill</span>
+            </a>
+            <a href="data.html" class="box data-box">
+                <i class="fas fa-database" style="color: var(--primary);"></i>
+                <span>Data Page</span>
             </a>
             <a href="history.html" class="box">
-                <i class="fas fa-history"></i>
-                <span>RECORDS</span>
+                <i class="fas fa-list-ul" style="color: #95a5a6;"></i>
+                <span>Records</span>
             </a>
             <a href="payments.html" class="box">
-                <i class="fas fa-money-bill-transfer"></i>
-                <span>PAYMENT</span>
+                <i class="fas fa-exchange-alt" style="color: var(--success);"></i>
+                <span>Payments</span>
             </a>
             <a href="myprofile.html" class="box">
-                <i class="fas fa-user-shield"></i>
-                <span>SETTINGS</span>
+                <i class="fas fa-cog" style="color: #7f8c8d;"></i>
+                <span>Settings</span>
             </a>
         </div>
 
         <div class="footer-info">
-            Database: Connected | Currency: INR (₹)
+            System Status: Online | Currency: INR (₹)
         </div>
     </div>
 
     <script>
         function toggleView() {
-            document.getElementById('mainFrame').classList.toggle('desktop-mode');
+            const frame = document.getElementById('mainFrame');
+            const btnText = document.getElementById('viewModeText');
+            frame.classList.toggle('desktop-mode');
+            btnText.innerText = frame.classList.contains('desktop-mode') ? "Mobile Mode" : "Desktop Mode";
         }
 
         async function fetchLiveData() {
             try {
-                // ১. কেনাবেচার ডাটা আনা
                 const { data: trans, error: e1 } = await supabaseClient.from('transactions').select('*');
-                // ২. পেমেন্ট ডাটা আনা
                 const { data: pays, error: e2 } = await supabaseClient.from('payments').select('*');
 
                 if (e1 || e2) throw e1 || e2;
 
                 let cashIn = 0, cashOut = 0, totalDue = 0;
                 
-                // ট্রানজাকশন থেকে হিসাব (Billings)
                 trans.forEach(item => {
-                    // যদি বিক্রি হয়, তবে কত টাকা পেলাম (paid_amount)
                     cashIn += parseFloat(item.paid_amount || 0);
-                    // মোট বাকি (due_amount)
                     totalDue += parseFloat(item.due_amount || 0);
                 });
 
-                // পেমেন্ট টেবিল থেকে হিসাব (Direct Money)
                 if(pays) {
                     pays.forEach(p => {
                         if(p.payment_type === 'took') cashIn += parseFloat(p.amount || 0);
@@ -168,11 +176,10 @@
                     });
                 }
 
-                // UI আপডেট
                 document.getElementById('totalReceived').innerText = formatINR(cashIn);
                 document.getElementById('totalPayment').innerText = formatINR(cashOut);
                 document.getElementById('totalPrice').innerText = formatINR(cashIn - cashOut);
-                document.getElementById('paymentStatus').innerText = formatINR(totalDue - cashOut); // নিট বাকি
+                document.getElementById('paymentStatus').innerText = formatINR(totalDue - cashOut);
             } catch (err) {
                 console.error("Error loading dashboard:", err.message);
             }
