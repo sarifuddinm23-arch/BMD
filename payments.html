@@ -12,20 +12,15 @@
         .top-bar { background: var(--dark); padding: 15px; color: white; display: flex; justify-content: space-between; }
         .container { max-width: 900px; margin: 20px auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 0 15px; }
         .box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        
         label { display: block; margin-top: 15px; font-weight: bold; font-size: 13px; }
         input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
-        
         .balance-card { background: #1a1a1a; color: var(--primary); padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
         .balance-card h2 { margin: 5px 0; font-size: 28px; }
-
         .btn-save { background: var(--primary); color: #000; border: none; padding: 15px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
         th, td { border-bottom: 1px solid #eee; padding: 10px; text-align: left; }
-        .gave { color: red; font-weight: bold; } /* টাকা আমি দিয়েছি */
-        .took { color: green; font-weight: bold; } /* টাকা আমি নিয়েছি */
-
+        .gave { color: red; font-weight: bold; }
+        .took { color: green; font-weight: bold; }
         @media print {
             body * { visibility: hidden; }
             #printArea, #printArea * { visibility: visible; }
@@ -63,7 +58,7 @@
         <label>Note / Remark</label>
         <textarea id="payNote" placeholder="কি বাবদ টাকা দিলেন..."></textarea>
 
-        <button class="btn-save" onclick="savePayment()">SAVE & PRINT SLIP</button>
+        <button class="btn-save" id="saveBtn" onclick="savePayment()">SAVE & PRINT SLIP</button>
     </div>
 
     <div class="box">
@@ -91,88 +86,66 @@
 </div>
 
 <script>
-    // ১. সেলার লোড
     async function loadParties() {
-        const { data } = await supabaseClient.from('parties').select('*');
+        const { data, error } = await supabaseClient.from('parties').select('*');
+        if (error) return console.error(error);
         const select = document.getElementById('partySelect');
         select.innerHTML = '<option value="">Choose Party</option>';
-        data.forEach(p => select.innerHTML += `<option value="${p.id}" data-mob="${p.mobile}" data-name="${p.first_name}">${p.first_name}</option>`);
+        data.forEach(p => select.innerHTML += `<option value="${p.id}" data-mob="${p.mobile}">${p.first_name}</option>`);
     }
 
-    // ২. বর্তমান বাকি কত তা বের করা (Transactions থেকে)
     async function loadPartyBalance() {
         const partyId = document.getElementById('partySelect').value;
         if(!partyId) return;
 
-        // Transactions টেবিল থেকে ডিউ নেওয়া
         const { data: trans } = await supabaseClient.from('transactions').select('due_amount').eq('party_id', partyId);
-        // Payments টেবিল থেকে আগে কত পেমেন্ট হয়েছে নেওয়া
         const { data: pays } = await supabaseClient.from('payments').select('*').eq('party_id', partyId);
 
-        let totalDue = trans.reduce((sum, t) => sum + t.due_amount, 0);
-        let paidAdjust = pays.reduce((sum, p) => p.type === 'gave' ? sum - p.amount : sum + p.amount, 0); 
+        let totalDue = (trans || []).reduce((sum, t) => sum + (parseFloat(t.due_amount) || 0), 0);
+        let paidAdjust = (pays || []).reduce((sum, p) => p.type === 'gave' ? sum - parseFloat(p.amount) : sum + parseFloat(p.amount), 0); 
         
-        // নোট: লজিকটি আপনার ব্যবসার ধরনের উপর নির্ভর করে। এখানে সহজভাবে বাকি দেখাচ্ছে।
         document.getElementById('currentBalance').innerText = "₹ " + (totalDue - paidAdjust).toFixed(2);
     }
 
-    // ৩. পেমেন্ট সেভ করা
     async function savePayment() {
+        const btn = document.getElementById('saveBtn');
         const partyId = document.getElementById('partySelect').value;
         const amount = parseFloat(document.getElementById('payAmount').value);
         const type = document.getElementById('payType').value;
         const note = document.getElementById('payNote').value;
 
-        if(!partyId || !amount) { alert("সব তথ্য দিন!"); return; }
+        if(!partyId || isNaN(amount)) { alert("সঠিকভাবে তথ্য দিন!"); return; }
+
+        btn.disabled = true;
+        btn.innerText = "Saving...";
 
         const { data, error } = await supabaseClient.from('payments').insert([{
             party_id: partyId, amount, type, note
         }]).select();
 
-        if(!error) {
-            alert("Payment Saved!");
-            loadPartyBalance();
-            fetchPayments();
+        if(error) {
+            console.error("Error saving:", error);
+            alert("সেভ হয়নি: " + error.message);
+        } else {
+            alert("Payment Saved! ✅");
+            document.getElementById('payAmount').value = '';
+            document.getElementById('payNote').value = '';
+            await loadPartyBalance();
+            await fetchPayments();
             preparePrint(data[0]);
         }
+        btn.disabled = false;
+        btn.innerText = "SAVE & PRINT SLIP";
     }
 
-    // ৪. লিস্ট দেখানো
     async function fetchPayments() {
-        const { data } = await supabaseClient.from('payments').select('*, parties(first_name, mobile)').order('created_at', {ascending: false});
+        const { data, error } = await supabaseClient.from('payments').select('*, parties(first_name, mobile)').order('created_at', {ascending: false});
+        if (error) return console.error(error);
+        
         const tbody = document.getElementById('paymentList');
         tbody.innerHTML = '';
         data.forEach(p => {
-            const waMsg = encodeURIComponent(`*PAYMENT RECEIPT*\nType: ${p.type}\nAmount: ₹${p.amount}\nRemaining: ${document.getElementById('currentBalance').innerText}`);
+            const waMsg = encodeURIComponent(`*PAYMENT RECEIPT*\nParty: ${p.parties?.first_name}\nType: ${p.type}\nAmount: ₹${p.amount}`);
             tbody.innerHTML += `
                 <tr>
-                    <td>${new Date(p.created_at).toLocaleDateString()}</td>
-                    <td class="${p.type}">${p.type.toUpperCase()}</td>
-                    <td>₹${p.amount}</td>
-                    <td><a href="https://wa.me/91${p.parties.mobile}?text=${waMsg}" target="_blank">🟢</a></td>
-                </tr>`;
-        });
-    }
-
-    function preparePrint(p) {
-        const name = document.getElementById('partySelect').options[document.getElementById('partySelect').selectedIndex].text;
-        const html = `
-            <div style="text-align:center; border-bottom:1px solid #000;"><h2>PAYMENT SLIP</h2></div>
-            <p><strong>Party:</strong> ${name}</p>
-            <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
-            <hr>
-            <h3>Amount: ₹${p.amount}</h3>
-            <p>Type: ${p.type === 'gave' ? 'Paid to Seller' : 'Received from Seller'}</p>
-            <p>Note: ${p.note || ''}</p>
-            <hr>
-            <p style="text-align:center;">Current Balance: ${document.getElementById('currentBalance').innerText}</p>
-        `;
-        document.getElementById('p1').innerHTML = html;
-        document.getElementById('p2').innerHTML = html;
-        window.print();
-    }
-
-    window.onload = () => { loadParties(); fetchPayments(); };
-</script>
-</body>
-</html>
+                    <td>${new Date(p.created_at).toLocaleDate
