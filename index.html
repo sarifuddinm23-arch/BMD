@@ -10,95 +10,45 @@
     
     <style>
         :root {
-            --primary: #f39c12;
-            --secondary: #2980b9;
-            --dark: #1a1a1a;
-            --bg: #f0f2f5;
-            --white: #ffffff;
-            --success: #27ae60;
-            --danger: #e74c3c;
+            --primary: #f39c12; --secondary: #2980b9; --dark: #1a1a1a;
+            --bg: #f0f2f5; --white: #ffffff; --success: #27ae60; --danger: #e74c3c;
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            margin: 0;
-            background-color: var(--bg);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: #333;
+            font-family: 'Segoe UI', Roboto, sans-serif; margin: 0;
+            background-color: var(--bg); display: flex; flex-direction: column;
+            align-items: center; color: #333;
         }
 
-        /* Top Navigation Bar */
         .top-bar {
-            width: 100%;
-            background: var(--dark);
-            padding: 12px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-sizing: border-box;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
+            width: 100%; background: var(--dark); padding: 12px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-sizing: border-box; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            position: sticky; top: 0; z-index: 1000;
         }
 
         .mode-btn {
-            background: rgba(255,255,255,0.1);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.3);
-            padding: 6px 15px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: 0.3s;
+            background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3);
+            padding: 6px 15px; border-radius: 20px; cursor: pointer; font-size: 13px;
         }
-        .mode-btn:hover { background: var(--primary); border-color: var(--primary); }
 
-        /* Dashboard Container */
         .phone-frame {
-            width: 95%;
-            max-width: 420px;
-            background: transparent;
-            min-height: 90vh;
-            margin-top: 20px;
-            margin-bottom: 20px;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: 95%; max-width: 420px; min-height: 90vh;
+            margin-top: 20px; transition: all 0.4s ease;
         }
 
         .desktop-mode { max-width: 1000px !important; }
 
-        header {
-            text-align: center;
-            padding: 10px 0 25px 0;
-        }
+        header { text-align: center; padding: 20px 0; }
+        header h1 { font-size: 22px; text-transform: uppercase; color: var(--dark); margin: 0; }
 
-        header h1 {
-            font-size: 24px;
-            margin: 0;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--dark);
-            font-weight: 800;
-        }
-
-        /* Stats Section */
         .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            padding: 0 10px;
-            margin-bottom: 25px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 10px;
         }
 
         .stat-card {
-            background: var(--white);
-            padding: 15px;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border-bottom: 4px solid #ddd;
-            text-align: left;
+            background: var(--white); padding: 15px; border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-bottom: 4px solid #ddd;
         }
 
         .stat-card.received { border-color: var(--success); }
@@ -106,73 +56,110 @@
         .stat-card.balance { border-color: var(--primary); }
         .stat-card.due { border-color: #9b59b6; }
 
-        .stat-label { font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase; }
-        .stat-value { display: block; font-size: 18px; font-weight: bold; margin-top: 5px; color: #2c3e50; }
-
-        /* Menu Links Section */
-        .menu-title {
-            font-size: 14px;
-            font-weight: bold;
-            color: #555;
-            margin: 10px 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .stat-label { font-size: 10px; font-weight: bold; color: #7f8c8d; text-transform: uppercase; }
+        .stat-value { display: block; font-size: 16px; font-weight: bold; margin-top: 5px; }
 
         .grid-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            padding: 15px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 15px;
         }
 
         .box {
-            background: var(--white);
-            padding: 20px 15px;
-            text-align: center;
-            border-radius: 18px;
-            text-decoration: none;
-            color: var(--dark);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
-            border: 1px solid rgba(0,0,0,0.02);
+            background: var(--white); padding: 20px 10px; text-align: center;
+            border-radius: 15px; text-decoration: none; color: var(--dark);
+            display: flex; flex-direction: column; gap: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: 0.3s;
         }
 
-        .box:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
-            background: var(--primary);
-            color: white;
-        }
-
-        .box i { font-size: 24px; margin-bottom: 5px; }
+        .box:hover { transform: translateY(-3px); background: var(--primary); color: white; }
+        .box i { font-size: 20px; }
         .box span { font-size: 13px; font-weight: 600; }
-        .box small { font-size: 9px; opacity: 0.7; font-weight: normal; }
 
-        /* Floating Decoration */
-        .footer-info {
-            text-align: center;
-            font-size: 12px;
-            color: #7f8c8d;
-            margin-top: 30px;
-            padding: 20px;
-            background: rgba(0,0,0,0.03);
-            width: 100%;
-        }
-
-        @media (min-width: 600px) {
-            .grid-container { grid-template-columns: 1fr 1fr 1fr; }
-            .stats-grid { grid-template-columns: 1fr 1fr 1fr 1fr; }
-        }
+        .footer-info { font-size: 11px; color: #aaa; margin-top: 30px; padding: 20px; text-align: center; }
     </style>
 </head>
-<body id="bodyTag">
+<body>
 
     <div class="top-bar">
-        <span style="color: white
+        <span style="color: white; font-weight: bold;"><i class="fas fa-industry"></i> BMD Manager</span>
+        <button class="mode-btn" onclick="toggleView()">🖥️ View Mode</button>
+    </div>
+
+    <div class="phone-frame" id="mainFrame">
+        <header>
+            <h1>Business Dashboard</h1>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card received">
+                <span class="stat-label">Received</span>
+                <span class="stat-value" id="totalReceived">₹ 0</span>
+            </div>
+            <div class="stat-card payment">
+                <span class="stat-label">Payment</span>
+                <span class="stat-value" id="totalPayment">₹ 0</span>
+            </div>
+            <div class="stat-card balance">
+                <span class="stat-label">Balance</span>
+                <span class="stat-value" id="totalPrice">₹ 0</span>
+            </div>
+            <div class="stat-card due">
+                <span class="stat-label">Total Due</span>
+                <span class="stat-value" id="paymentStatus">₹ 0</span>
+            </div>
+        </div>
+
+        <div class="grid-container">
+            <a href="product.html" class="box">
+                <i class="fas fa-plus-circle"></i>
+                <span>SELL & RECEIVE</span>
+            </a>
+            <a href="invoice.html" class="box">
+                <i class="fas fa-file-invoice"></i>
+                <span>ALL BILLS</span>
+            </a>
+            <a href="Seller_Management.html" class="box">
+                <i class="fas fa-users"></i>
+                <span>PARTIES</span>
+            </a>
+            <a href="myprofile.html" class="box">
+                <i class="fas fa-user-cog"></i>
+                <span>PROFILE</span>
+            </a>
+        </div>
+
+        <div class="footer-info">
+            Database: Connected | Currency: INR (₹)
+        </div>
+    </div>
+
+    <script>
+        function toggleView() {
+            document.getElementById('mainFrame').classList.toggle('desktop-mode');
+        }
+
+        async function fetchLiveData() {
+            try {
+                // 'supabaseClient' আপনার config.js থেকে আসছে
+                const { data, error } = await supabaseClient.from('transactions').select('*');
+                if (error) throw error;
+
+                let received = 0, payment = 0, due = 0;
+                data.forEach(item => {
+                    received += parseFloat(item.paid_amount || 0);
+                    due += parseFloat(item.due_amount || 0);
+                    if(item.type === 'purchase') payment += parseFloat(item.paid_amount || 0);
+                });
+
+                document.getElementById('totalReceived').innerText = formatINR(received);
+                document.getElementById('totalPayment').innerText = formatINR(payment);
+                document.getElementById('totalPrice').innerText = formatINR(received - payment);
+                document.getElementById('paymentStatus').innerText = formatINR(due);
+            } catch (err) {
+                console.log("Error loading dashboard:", err.message);
+            }
+        }
+
+        window.onload = fetchLiveData;
+    </script>
+</body>
+</html>
