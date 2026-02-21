@@ -8,116 +8,167 @@
     <script src="config.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --primary: #f39c12; --dark: #1a1a1a; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; }
-        .top-bar { background: var(--dark); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; }
+        :root { --primary: #f39c12; --dark: #1a1a1a; --bg: #f0f2f5; --white: #fff; --success: #27ae60; --danger: #e74c3c; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); transition: 0.3s; }
         
-        .header-card { background: white; margin: 15px; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center; }
-        .header-card h2 { margin: 5px 0; color: var(--dark); }
-        
-        /* Stats Box */
-        .stats-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 15px; }
-        .stat-box { background: white; padding: 15px; border-radius: 12px; border-bottom: 4px solid #ddd; }
-        .stat-box.green { border-color: #27ae60; }
-        .stat-box.red { border-color: #e74c3c; }
+        /* Top Bar */
+        .top-bar { 
+            background: var(--dark); color: white; padding: 12px 20px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            position: sticky; top:0; z-index: 1000; 
+        }
+        .mode-btn { 
+            background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3);
+            padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 12px;
+        }
+
+        /* Container & Responsive Mode */
+        .container { width: 95%; max-width: 420px; margin: 15px auto; transition: all 0.4s ease; }
+        .desktop-view { max-width: 1000px !important; }
+
+        /* Profile Header */
+        .profile-card { background: var(--white); border-radius: 15px; padding: 20px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .profile-card h2 { margin: 10px 0 5px; font-size: 20px; }
+        .balance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .bal-item { padding: 10px; border-radius: 10px; background: #f8f9fa; }
+        .bal-item small { font-size: 10px; color: #777; font-weight: bold; }
+        .bal-item span { display: block; font-size: 15px; font-weight: bold; }
+
+        /* 4 Action Icons Grid */
+        .action-grid { 
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; 
+        }
+        .action-btn { 
+            background: var(--white); padding: 15px 5px; border-radius: 12px; text-align: center;
+            text-decoration: none; color: var(--dark); font-size: 10px; font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: 0.2s;
+        }
+        .action-btn:active { transform: scale(0.95); }
+        .action-btn i { display: block; font-size: 20px; margin-bottom: 8px; }
+        .action-btn.receive i { color: #2980b9; }
+        .action-btn.sell i { color: #e67e22; }
+        .action-btn.pay-in i { color: var(--success); }
+        .action-btn.pay-out i { color: var(--danger); }
 
         /* Statement Table */
-        .statement-box { background: white; margin: 15px; border-radius: 15px; overflow: hidden; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background: #eee; padding: 12px; text-align: left; }
-        td { padding: 12px; border-bottom: 1px solid #f1f1f1; }
-        
-        .btn-print { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        .statement-card { background: var(--white); border-radius: 15px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .table-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { background: #f8f9fa; padding: 12px 10px; text-align: left; color: #666; }
+        td { padding: 12px 10px; border-bottom: 1px solid #f1f1f1; }
 
         @media print {
-            .top-bar, .btn-print { display: none; }
-            body { background: white; }
-            .statement-box { box-shadow: none; margin: 0; }
+            .top-bar, .action-grid, .mode-btn { display: none !important; }
+            .container { max-width: 100% !important; width: 100%; margin: 0; }
+            .statement-card { box-shadow: none; }
         }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <i class="fas fa-arrow-left" onclick="history.back()"></i>
-    <span>ACCOUNT DASHBOARD</span>
-    <button class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    <div onclick="history.back()" style="cursor:pointer;"><i class="fas fa-arrow-left"></i> PROFILE</div>
+    <button class="mode-btn" onclick="toggleMode()"><i class="fas fa-desktop"></i> Desktop Mode</button>
 </div>
 
-<div class="header-card">
-    <i class="fas fa-user-circle fa-3x" style="color: #ccc;"></i>
-    <h2 id="accName">Loading...</h2>
-    <p id="accPhone" style="color: #777;"></p>
-</div>
-
-<div class="stats-container">
-    <div class="stat-box green">
-        <small>TOTAL RECEIVED</small>
-        <h3 id="totalRec">₹ 0</h3>
+<div class="container" id="mainWrapper">
+    
+    <div class="profile-card">
+        <i class="fas fa-user-circle fa-3x" style="color: #ddd;"></i>
+        <h2 id="userName">Loading...</h2>
+        <div class="balance-grid">
+            <div class="bal-item">
+                <small>TOTAL PAID</small>
+                <span id="txtPaid" style="color: var(--success);">₹ 0</span>
+            </div>
+            <div class="bal-item">
+                <small>NET DUE</small>
+                <span id="txtDue" style="color: var(--danger);">₹ 0</span>
+            </div>
+        </div>
     </div>
-    <div class="stat-box red">
-        <small>TOTAL DUE</small>
-        <h3 id="totalDue">₹ 0</h3>
-    </div>
-</div>
 
-<div class="statement-box">
-    <h4 style="padding: 15px; margin: 0; border-bottom: 1px solid #eee;">Statement (All Records)</h4>
-    <table>
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Details</th>
-                <th>Type</th>
-                <th>Amount</th>
-            </tr>
-        </thead>
-        <tbody id="statementBody">
-            </tbody>
-    </table>
+    <div class="action-grid">
+        <a href="#" class="action-btn receive" onclick="alert('Open Receive Form')">
+            <i class="fas fa-truck-loading"></i> RECEIVE
+        </a>
+        <a href="#" class="action-btn sell" onclick="alert('Open Sell Form')">
+            <i class="fas fa-shopping-cart"></i> SELL
+        </a>
+        <a href="#" class="action-btn pay-in" onclick="alert('Open Payment In Form')">
+            <i class="fas fa-hand-holding-usd"></i> PAY-IN
+        </a>
+        <a href="#" class="action-btn pay-out" onclick="alert('Open Payment Out Form')">
+            <i class="fas fa-file-invoice-dollar"></i> PAY-OUT
+        </a>
+    </div>
+
+    <div class="statement-card">
+        <div class="table-header">
+            <span style="font-weight: bold;"><i class="fas fa-list"></i> STATEMENT</span>
+            <button onclick="window.print()" style="padding: 5px 10px; cursor: pointer;"><i class="fas fa-print"></i> Print</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Product/Note</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody id="statementData">
+                </tbody>
+        </table>
+    </div>
+
 </div>
 
 <script>
+    function toggleMode() {
+        document.getElementById('mainWrapper').classList.toggle('desktop-view');
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
-    const accId = urlParams.get('id');
+    const userId = urlParams.get('id');
 
-    async function loadProfile() {
-        if(!accId) return;
+    async function loadData() {
+        if(!userId) return;
 
-        // 1. Fetch Account Details
-        const { data: account } = await supabaseClient.from('accounts').select('*').eq('id', accId).single();
-        if(account) {
-            document.getElementById('accName').innerText = account.name;
-            document.getElementById('accPhone').innerText = account.phone || "No Phone";
-        }
+        // 1. User Info Load
+        const { data: user } = await supabaseClient.from('accounts').select('name').eq('id', userId).single();
+        if(user) document.getElementById('userName').innerText = user.name;
 
-        // 2. Fetch Transactions (Sell, Receive, Payment)
-        const { data: trans } = await supabaseClient.from('transactions').select('*').eq('party_id', accId).order('created_at', {ascending: false});
-        
-        let html = '';
+        // 2. Transactions Load
+        const { data: trans } = await supabaseClient.from('transactions')
+            .select('*')
+            .eq('party_id', userId)
+            .order('created_at', { ascending: false });
+
+        let tableHtml = '';
         let totalPaid = 0;
         let totalDue = 0;
 
-        trans.forEach(item => {
-            totalPaid += parseFloat(item.paid_amount || 0);
-            totalDue += parseFloat(item.due_amount || 0);
+        trans.forEach(row => {
+            totalPaid += parseFloat(row.paid_amount || 0);
+            totalDue += parseFloat(row.due_amount || 0);
 
-            html += `
+            tableHtml += `
                 <tr>
-                    <td>${new Date(item.created_at).toLocaleDateString()}</td>
-                    <td>${item.product_name || 'Payment'}</td>
-                    <td><span style="color:${item.paid_amount > 0 ? 'green' : 'red'}">${item.mother_category || 'Cash'}</span></td>
-                    <td>₹ ${item.net_total || item.paid_amount}</td>
+                    <td>${new Date(row.created_at).toLocaleDateString()}</td>
+                    <td>${row.product_name || 'Cash Entry'}</td>
+                    <td><b>${row.mother_category || 'Payment'}</b></td>
+                    <td>₹ ${row.net_total || row.paid_amount}</td>
                 </tr>
             `;
         });
 
-        document.getElementById('statementBody').innerHTML = html;
-        document.getElementById('totalRec').innerText = "₹ " + totalPaid.toFixed(2);
-        document.getElementById('totalDue').innerText = "₹ " + totalDue.toFixed(2);
+        document.getElementById('statementData').innerHTML = tableHtml || '<tr><td colspan="4" style="text-align:center">No Data Found</td></tr>';
+        document.getElementById('txtPaid').innerText = "₹ " + totalPaid.toLocaleString();
+        document.getElementById('txtDue').innerText = "₹ " + totalDue.toLocaleString();
     }
 
-    window.onload = loadProfile;
+    window.onload = loadData;
 </script>
 
 </body>
