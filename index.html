@@ -111,11 +111,15 @@
         <div class="grid-container">
             <a href="Transactions.html" class="box">
                 <i class="fas fa-plus-circle"></i>
-                <span>TRANSACTONS</span>
+                <span>TRANSACTIONS</span>
             </a>
             <a href="history.html" class="box">
                 <i class="fas fa-file-invoice"></i>
                 <span>INVOICE</span>
+            </a>
+            <a href="payments.html" class="box" style="border: 1px solid var(--primary);">
+                <i class="fas fa-money-bill-transfer"></i>
+                <span>PAYMENT</span>
             </a>
             <a href="Seller_Management.html" class="box">
                 <i class="fas fa-users"></i>
@@ -139,16 +143,31 @@
 
         async function fetchLiveData() {
             try {
-                // 'supabaseClient' আপনার config.js থেকে আসছে
+                // Transactions থেকে ডাটা নিয়ে আসা
                 const { data, error } = await supabaseClient.from('transactions').select('*');
                 if (error) throw error;
 
+                // Payments টেবিল থেকে ডাটা নিয়ে আসা (পেমেন্ট কার্ডের জন্য)
+                const { data: payData } = await supabaseClient.from('payments').select('*');
+
                 let received = 0, payment = 0, due = 0;
+                
+                // ট্রানজাকশন ক্যালকুলেশন
                 data.forEach(item => {
                     received += parseFloat(item.paid_amount || 0);
                     due += parseFloat(item.due_amount || 0);
-                    if(item.type === 'purchase') payment += parseFloat(item.paid_amount || 0);
+                    if(item.type === 'purchase' || item.type === 'receive') {
+                        payment += parseFloat(item.paid_amount || 0);
+                    }
                 });
+
+                // পেমেন্ট টেবিল থেকে পেমেন্ট যোগ করা (যদি থাকে)
+                if(payData) {
+                    payData.forEach(p => {
+                        if(p.type === 'gave') payment += parseFloat(p.amount || 0);
+                        if(p.type === 'took') received += parseFloat(p.amount || 0);
+                    });
+                }
 
                 document.getElementById('totalReceived').innerText = formatINR(received);
                 document.getElementById('totalPayment').innerText = formatINR(payment);
@@ -157,6 +176,11 @@
             } catch (err) {
                 console.log("Error loading dashboard:", err.message);
             }
+        }
+
+        // টাকার ফরম্যাট করার ফাংশন
+        function formatINR(val) {
+            return "₹ " + parseFloat(val).toLocaleString('en-IN', { minimumFractionDigits: 2 });
         }
 
         window.onload = fetchLiveData;
