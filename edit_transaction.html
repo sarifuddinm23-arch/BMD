@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMD - Edit Transaction</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    
+    <style>
+        :root { --primary: #f39c12; --dark: #1a1a1a; --bg: #f4f4f9; }
+        body { font-family: sans-serif; margin: 0; background: var(--bg); }
+        .top-bar { background: var(--dark); padding: 15px; color: white; display: flex; align-items: center; }
+        .container { max-width: 500px; margin: 20px auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        label { display: block; margin-top: 15px; font-weight: bold; font-size: 14px; color: #444; }
+        input, select { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        input:focus { border-color: var(--primary); outline: none; background: #fffdf5; }
+
+        .calc-info { background: #fff9e6; padding: 15px; border-radius: 8px; margin-top: 20px; border: 1px dashed var(--primary); }
+        .calc-info p { margin: 5px 0; font-size: 16px; font-weight: bold; }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        .save-btn { flex: 2; background: #27ae60; color: white; border: none; padding: 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .cancel-btn { flex: 1; background: #e74c3c; color: white; border: none; padding: 15px; border-radius: 6px; cursor: pointer; text-align: center; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <span onclick="window.location.href='history.html'" style="cursor:pointer; margin-right: 15px;">⬅️</span>
+    <strong>EDIT TRANSACTION</strong>
+</div>
+
+<div class="container">
+    <form id="editForm">
+        <label>Seller / Party Name</label>
+        <select id="partySelect" disabled style="background: #eee;">
+            </select>
+
+        <label>Transaction Type</label>
+        <select id="type" required>
+            <option value="sell">Sell (বিক্রি)</option>
+            <option value="receive">Purchase (ক্রয়)</option>
+        </select>
+
+        <label>Product</label>
+        <select id="product" required>
+            <option value="Petrol">Petrol</option>
+            <option value="Diesel">Diesel</option>
+            <option value="Mustard Oil">Mustard Oil</option>
+            <option value="Cake (Khail)">Cake (Khail)</option>
+        </select>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+                <label>Qty (Ltr/Kg)</label>
+                <input type="number" id="qty" step="0.01" required oninput="calculate()">
+            </div>
+            <div>
+                <label>Rate</label>
+                <input type="number" id="rate" step="0.01" required oninput="calculate()">
+            </div>
+        </div>
+
+        <label>Payment Received/Paid</label>
+        <input type="number" id="paid" step="0.01" required oninput="calculate()">
+
+        <div class="calc-info">
+            <p>Total Bill: ₹ <span id="net_total">0.00</span></p>
+            <p style="color: red;">Due Balance: ₹ <span id="due_amount">0.00</span></p>
+        </div>
+
+        <div class="btn-group">
+            <button type="button" class="save-btn" id="saveBtn" onclick="updateData()">UPDATE CHANGES</button>
+            <a href="history.html" class="cancel-btn">CANCEL</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    // ১. URL থেকে আইডি সংগ্রহ করা
+    const urlParams = new URLSearchParams(window.location.search);
+    const transId = urlParams.get('id');
+
+    async function loadInitialData() {
+        if (!transId) {
+            alert("কোনো আইডি খুঁজে পাওয়া যায়নি!");
+            window.location.href = 'history.html';
+            return;
+        }
+
+        // সেলার লিস্ট লোড করা
+        const { data: parties } = await supabaseClient.from('parties').select('id, first_name');
+        const select = document.getElementById('partySelect');
+        parties.forEach(p => {
+            select.innerHTML += `<option value="${p.id}">${p.first_name}</option>`;
+        });
+
+        // বর্তমান ট্রানজাকশন ডাটা লোড করা
+        const { data: trans, error } = await supabaseClient
+            .from('transactions')
+            .select('*')
+            .eq('id', transId)
+            .single();
+
+        if (error) {
+            alert("ডাটা লোড করতে সমস্যা হয়েছে!");
+            return;
+        }
+
+        // ফরম ফিলাপ করা
+        document.getElementById('partySelect').value = trans.party_id;
+        document.getElementById('type').value = trans.type;
+        document.getElementById('product').value = trans.product;
+        document.getElementById('qty').value = trans.qty;
+        document.getElementById('rate').value = trans.rate;
+        document.getElementById('paid').value = trans.paid_amount;
+        
+        calculate();
+    }
+
+    // ২. অটো ক্যালকুলেশন
+    function calculate() {
+        const qty = parseFloat(document.getElementById('qty').value) || 0;
+        const rate = parseFloat(document.getElementById('rate').value) || 0;
+        const paid = parseFloat(document.getElementById('paid').value) || 0;
+
+        const total = qty * rate;
+        const due = total - paid;
+
+        document.getElementById('net_total').innerText = total.toFixed(2);
+        document.getElementById('due_amount').innerText = due.toFixed(2);
+    }
+
+    // ৩. ডাটা আপডেট করা
+    async function updateData() {
+        const btn = document.getElementById('saveBtn');
+        const updatedData = {
+            type: document.getElementById('type').value,
+            product: document.getElementById('product').value,
+            qty: parseFloat(document.getElementById('qty').value),
+            rate: parseFloat(document.getElementById('rate').value),
+            net_total: parseFloat(document.getElementById('net_total').innerText),
+            paid_amount: parseFloat(document.getElementById('paid').value),
+            due_amount: parseFloat(document.getElementById('due_amount').innerText)
+        };
+
+        btn.disabled = true;
+        btn.innerText = "Updating...";
+
+        const { error } = await supabaseClient
+            .from('transactions')
+            .update(updatedData)
+            .eq('id', transId);
+
+        if (error) {
+            alert("Error: " + error.message);
+            btn.disabled = false;
+            btn.innerText = "UPDATE CHANGES";
+        } else {
+            alert("সফলভাবে আপডেট করা হয়েছে! ✅");
+            window.location.href = 'history.html';
+        }
+    }
+
+    window.onload = loadInitialData;
+</script>
+</body>
+</html>
