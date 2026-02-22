@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Business Admin Dashboard - My Manager</title>
+    <title>BMD Admin - My Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
@@ -11,10 +11,10 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
-        .sidebar-link:hover { background-color: #374151; border-left: 4px solid #3b82f6; }
-        .active-link { background-color: #1f2937; border-left: 4px solid #3b82f6; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .sidebar-link:hover { background-color: #374151; border-left: 4px solid #f39c12; }
+        .active-link { background-color: #1f2937; border-left: 4px solid #f39c12; }
+        .stat-card { transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-5px); }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -33,7 +33,7 @@
     <div class="flex h-screen overflow-hidden">
         <aside class="w-64 bg-gray-900 text-white flex flex-col transition-all duration-300">
             <div class="p-6 text-2xl font-bold border-b border-gray-800 flex items-center gap-3">
-                <i class="fas fa-chart-line text-blue-500"></i>
+                <i class="fas fa-chart-line text-orange-500"></i>
                 <span>My Manager</span>
             </div>
             
@@ -47,11 +47,28 @@
                 <a href="Transactions.html" class="sidebar-link flex items-center p-3 rounded-lg transition text-gray-400 hover:text-white">
                     <i class="fas fa-exchange-alt w-6"></i> <span>Transactions</span>
                 </a>
-                <a href="data.html" class="sidebar-link flex items-center p-3 rounded-lg transition text-gray-400 hover:text-white">
-                    <i class="fas fa-database w-6"></i> <span>Master Data</span>
-                </a>
+                
+                <div class="pt-2">
+                    <p class="px-4 text-[10px] uppercase font-bold text-gray-500 mb-2">Inventory Control</p>
+                    <a href="data.html" class="sidebar-link flex items-center p-3 rounded-lg transition text-gray-400 hover:text-white">
+                        <i class="fas fa-database w-6"></i> <span>Master Data</span>
+                    </a>
+                </div>
+
                 <div class="border-t border-gray-800 my-4"></div>
-                <button onclick="logout()" class="w-full bg-red-600/10 hover:bg-red-600 p-3 rounded-lg flex items-center gap-3 text-red-500 hover:text-white transition group">
+                
+                <p class="px-4 text-[10px] uppercase font-bold text-gray-500 mb-2">My Businesses</p>
+                <a href="ckart.html" class="sidebar-link flex items-center p-3 rounded-lg transition text-gray-400 hover:text-white">
+                    <i class="fas fa-shopping-cart w-6"></i> <span>My Ckart Business</span>
+                </a>
+                <a href="oil.html" class="sidebar-link flex items-center p-3 rounded-lg transition text-gray-400 hover:text-white">
+                    <i class="fas fa-oil-can w-6"></i> <span>My Oil Business</span>
+                </a>
+                <a href="setting.html" class="sidebar-link flex items-center p-3 rounded-lg transition text-gray-400 hover:text-white">
+                    <i class="fas fa-cog w-6"></i> <span>Settings</span>
+                </a>
+
+                <button onclick="logout()" class="w-full mt-8 bg-red-600/10 hover:bg-red-600 p-3 rounded-lg flex items-center gap-3 text-red-500 hover:text-white transition">
                     <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
                 </button>
             </nav>
@@ -61,116 +78,125 @@
             <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-800">Control Center</h1>
-                    <p class="text-gray-500 text-sm">Welcome back, Administrator</p>
+                    <p class="text-gray-500 text-sm">ব্যবসার বর্তমান অবস্থা একনজরে দেখুন</p>
                 </div>
                 <div class="flex items-center gap-4">
                     <span class="bg-white p-2 rounded-xl shadow-sm px-4 text-sm font-semibold text-gray-600 border border-gray-200">
-                        <i class="fas fa-calendar-day text-blue-500 mr-2"></i> <span id="currentDate"></span>
+                        <i class="fas fa-calendar-day text-orange-500 mr-2"></i> <span id="currentDate"></span>
                     </span>
-                    <img src="https://ui-avatars.com/api/?name=Admin&background=1e293b&color=fff" class="w-10 h-10 rounded-full border-2 border-white shadow-md">
                 </div>
             </header>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-green-500">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="text-xs text-gray-400 uppercase font-black mb-1">Total Sales</p>
-                            <h3 id="statSales" class="text-2xl font-bold text-gray-800">₹ 0.00</h3>
-                        </div>
-                        <div class="bg-green-100 p-3 rounded-lg text-green-600"><i class="fas fa-shopping-bag text-xl"></i></div>
-                    </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-blue-500 stat-card">
+                    <p class="text-xs text-gray-400 uppercase font-black">Total Products</p>
+                    <h3 id="totalProducts" class="text-2xl font-bold text-gray-800">0</h3>
+                    <p class="text-[10px] text-gray-400 mt-1" id="totalCats">0 Categories</p>
                 </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-orange-500">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="text-xs text-gray-400 uppercase font-black mb-1">Total Purchase</p>
-                            <h3 id="statPurchase" class="text-2xl font-bold text-gray-800">₹ 0.00</h3>
-                        </div>
-                        <div class="bg-orange-100 p-3 rounded-lg text-orange-600"><i class="fas fa-truck-loading text-xl"></i></div>
-                    </div>
+                
+                <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-orange-500 stat-card">
+                    <p class="text-xs text-gray-400 uppercase font-black">Purchase Value</p>
+                    <h3 id="purchasePrice" class="text-xl font-bold text-gray-800">₹ 0.00</h3>
                 </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-red-500">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="text-xs text-gray-400 uppercase font-black mb-1">Balance Due</p>
-                            <h3 id="statDue" class="text-2xl font-bold text-red-600">₹ 0.00</h3>
-                        </div>
-                        <div class="bg-red-100 p-3 rounded-lg text-red-600"><i class="fas fa-wallet text-xl"></i></div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-green-500 stat-card">
+                    <p class="text-xs text-gray-400 uppercase font-black">Stock Net Value</p>
+                    <h3 id="netPrice" class="text-xl font-bold text-gray-800">₹ 0.00</h3>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-purple-500 stat-card">
+                    <p class="text-xs text-gray-400 uppercase font-black">Total Accounts</p>
+                    <h3 id="totalAccs" class="text-2xl font-bold text-gray-800">0</h3>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-red-50 p-6 rounded-2xl border border-red-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-red-600 font-bold uppercase">Total Payable (আমি দেব)</p>
+                        <h2 id="duePayable" class="text-3xl font-black text-red-700">₹ 0.00</h2>
                     </div>
+                    <i class="fas fa-arrow-up text-red-300 text-4xl"></i>
+                </div>
+
+                <div class="bg-green-50 p-6 rounded-2xl border border-green-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-green-600 font-bold uppercase">Total Receivable (আমি পাব)</p>
+                        <h2 id="dueReceivable" class="text-3xl font-black text-green-700">₹ 0.00</h2>
+                    </div>
+                    <i class="fas fa-arrow-down text-green-300 text-4xl"></i>
                 </div>
             </div>
 
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="p-6 border-b border-gray-100 flex justify-between items-center">
                     <h2 class="text-xl font-bold text-gray-800">Recent Transactions</h2>
-                    <button onclick="loadDashboardData()" class="text-blue-600 hover:rotate-180 transition duration-500">
-                        <i class="fas fa-sync-alt"></i>
+                    <button onclick="loadDashboardData()" class="bg-gray-100 p-2 rounded-lg hover:bg-gray-200 transition">
+                        <i class="fas fa-sync-alt text-gray-600"></i>
                     </button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
-                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                        <thead class="bg-gray-50 text-gray-500 text-[10px] uppercase">
                             <tr>
                                 <th class="p-4">Date</th>
-                                <th class="p-4">Customer/Item</th>
+                                <th class="p-4">Item / Party</th>
                                 <th class="p-4">Type</th>
                                 <th class="p-4 text-right">Amount</th>
                             </tr>
                         </thead>
-                        <tbody id="activityList" class="divide-y divide-gray-100">
-                            </tbody>
+                        <tbody id="activityList" class="divide-y divide-gray-100 text-sm"></tbody>
                     </table>
-                    <div id="loader" class="p-10 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i> Fetching data...</div>
+                    <div id="loader" class="p-10 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i> Syncing Data...</div>
                 </div>
             </div>
         </main>
     </div>
 
     <script>
-        // Set Today's Date
         document.getElementById('currentDate').innerText = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
         async function loadDashboardData() {
             document.getElementById('loader').classList.remove('hidden');
-            
             try {
-                // 1. Fetch all Transactions
-                const { data: trans, error: tErr } = await supabaseClient.from('transactions').select('*').order('created_at', {ascending: false});
-                // 2. Fetch all Payments
-                const { data: pays, error: pErr } = await supabaseClient.from('payments').select('*');
+                // 1. Fetch Accounts
+                const { data: accs } = await supabaseClient.from('accounts').select('id');
+                document.getElementById('totalAccs').innerText = accs ? accs.length : 0;
 
-                if(tErr || pErr) throw tErr || pErr;
+                // 2. Fetch Products & Categories (Master Data)
+                const { data: products } = await supabaseClient.from('product_list').select('*');
+                if(products) {
+                    document.getElementById('totalProducts').innerText = products.length;
+                    const cats = [...new Set(products.map(p => p.category_id))];
+                    document.getElementById('totalCats').innerText = cats.length + " Categories";
+                    
+                    let pValue = products.reduce((s, p) => s + (parseFloat(p.purchase_price || 0) * (p.stock || 0)), 0);
+                    let nValue = products.reduce((s, p) => s + (parseFloat(p.sell_price || 0) * (p.stock || 0)), 0);
+                    
+                    document.getElementById('purchasePrice').innerText = "₹ " + pValue.toLocaleString('en-IN');
+                    document.getElementById('netPrice').innerText = "₹ " + nValue.toLocaleString('en-IN');
+                }
 
-                let sales = 0, purchase = 0, totalDue = 0;
+                // 3. Fetch Transactions for Due Calculations
+                const { data: trans } = await supabaseClient.from('transactions').select('*').order('created_at', {ascending: false});
+                
+                let receivable = 0; // আমি পাব (Sales Due)
+                let payable = 0;    // আমি দেব (Purchase Due)
 
-                // Calculation logic
                 if(trans) {
                     trans.forEach(t => {
-                        const val = parseFloat(t.total || 0);
-                        if(t.type === 'sell') sales += val;
-                        if(t.type === 'received') purchase += val;
-                        totalDue += parseFloat(t.due || 0);
+                        const due = parseFloat(t.due || 0);
+                        if(t.type === 'sell') receivable += due;
+                        if(t.type === 'received') payable += due;
                     });
+                    renderTable(trans.slice(0, 8));
                 }
 
-                if(pays) {
-                    pays.forEach(p => {
-                        if(p.action === 'received') totalDue -= parseFloat(p.total_amt || 0);
-                        if(p.action === 'payout') totalDue += parseFloat(p.total_amt || 0);
-                    });
-                }
-
-                // Update UI Counters
-                document.getElementById('statSales').innerText = "₹ " + sales.toLocaleString('en-IN', {minimumFractionDigits: 2});
-                document.getElementById('statPurchase').innerText = "₹ " + purchase.toLocaleString('en-IN', {minimumFractionDigits: 2});
-                document.getElementById('statDue').innerText = "₹ " + totalDue.toLocaleString('en-IN', {minimumFractionDigits: 2});
-
-                // Render Table (Last 10)
-                renderTable(trans.slice(0, 10));
+                document.getElementById('dueReceivable').innerText = "₹ " + receivable.toLocaleString('en-IN');
+                document.getElementById('duePayable').innerText = "₹ " + payable.toLocaleString('en-IN');
 
             } catch (err) {
-                console.error("Dashboard Error:", err);
+                console.error(err);
             } finally {
                 document.getElementById('loader').classList.add('hidden');
             }
@@ -178,38 +204,30 @@
 
         function renderTable(data) {
             const tbody = document.getElementById('activityList');
-            if(!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="p-10 text-center text-gray-400">No transactions found</td></tr>`;
-                return;
-            }
-
             tbody.innerHTML = data.map(item => `
                 <tr class="hover:bg-gray-50 transition">
-                    <td class="p-4 text-sm text-gray-500">${new Date(item.created_at).toLocaleDateString('en-IN')}</td>
+                    <td class="p-4 text-gray-500 text-xs">${new Date(item.created_at).toLocaleDateString('en-IN')}</td>
                     <td class="p-4">
-                        <div class="font-bold text-gray-800">${item.product_name}</div>
-                        <div class="text-xs text-gray-400">${item.mobile}</div>
+                        <div class="font-bold text-gray-800">${item.product_name || 'N/A'}</div>
+                        <div class="text-[10px] text-gray-400">${item.mobile || ''}</div>
                     </td>
                     <td class="p-4">
-                        <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase ${item.type === 'sell' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}">
+                        <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase ${item.type === 'sell' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
                             ${item.type}
                         </span>
                     </td>
-                    <td class="p-4 text-right font-bold ${item.type === 'sell' ? 'text-green-600' : 'text-blue-600'}">
-                        ₹ ${parseFloat(item.total).toLocaleString('en-IN')}
-                    </td>
+                    <td class="p-4 text-right font-bold text-gray-700">₹ ${parseFloat(item.total || 0).toLocaleString('en-IN')}</td>
                 </tr>
             `).join('');
         }
 
         async function logout() {
-            if(confirm("Are you sure you want to logout?")) {
+            if(confirm("Logout from My Manager?")) {
                 await supabaseClient.auth.signOut();
                 window.location.href = "admin_login.html";
             }
         }
 
-        // Run on load
         window.onload = loadDashboardData;
     </script>
 </body>
