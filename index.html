@@ -27,6 +27,12 @@
             position: sticky; top: 0; z-index: 1000;
         }
 
+        /* Top Bar Login Buttons Styling */
+        .login-links { display: flex; gap: 15px; }
+        .login-item { color: white; text-decoration: none; font-size: 11px; text-align: center; display: flex; flex-direction: column; align-items: center; opacity: 0.8; transition: 0.3s; }
+        .login-item:hover { opacity: 1; color: var(--primary); }
+        .login-item i { font-size: 16px; margin-bottom: 2px; }
+
         .mode-btn {
             background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3);
             padding: 6px 15px; border-radius: 20px; cursor: pointer; font-size: 13px;
@@ -74,9 +80,11 @@
 
         .box:hover { transform: translateY(-3px); border-color: var(--primary); color: var(--primary); }
         .box i { font-size: 22px; }
-        .box span { font-size: 12px; font-weight: bold; text-transform: uppercase; }
+        .box span { font-size: 11px; font-weight: bold; text-transform: uppercase; }
 
-        /* Data Page Special Style */
+        /* Custom Icon Boxes for Linkhire.html */
+        .hire-box { background: #f9f9f9; border: 1px solid #eee; }
+
         .box.data-box { background: #fff3e0; border: 1px dashed var(--primary); }
 
         .footer-info { font-size: 11px; color: #aaa; margin-top: 30px; padding: 20px; text-align: center; }
@@ -85,7 +93,20 @@
 <body>
 
     <div class="top-bar">
-        <span style="color: white; font-weight: bold;"><i class="fas fa-industry"></i> BMD Manager</span>
+        <div class="login-links">
+            <a href="admin_login.html" class="login-item">
+                <i class="fas fa-user-shield"></i>
+                <span>Admin</span>
+            </a>
+            <a href="seller_login.html" class="login-item">
+                <i class="fas fa-store"></i>
+                <span>Seller</span>
+            </a>
+            <a href="wholeseller_login.html" class="login-item">
+                <i class="fas fa-truck-loading"></i>
+                <span>Wholesale</span>
+            </a>
+        </div>
         <button class="mode-btn" onclick="toggleView()">
             <i class="fas fa-desktop"></i> <span id="viewModeText">Desktop Mode</span>
         </button>
@@ -140,6 +161,27 @@
                 <i class="fas fa-cog" style="color: #7f8c8d;"></i>
                 <span>Settings</span>
             </a>
+
+            <a href="linkhire.html" class="box hire-box">
+                <i class="fas fa-box-open" style="color: #e74c3c;"></i>
+                <span>Inventory</span>
+            </a>
+            <a href="linkhire.html" class="box hire-box">
+                <i class="fas fa-address-book" style="color: #8e44ad;"></i>
+                <span>Suppliers</span>
+            </a>
+            <a href="linkhire.html" class="box hire-box">
+                <i class="fas fa-chart-bar" style="color: #2c3e50;"></i>
+                <span>Reports</span>
+            </a>
+            <a href="linkhire.html" class="box hire-box">
+                <i class="fas fa-print" style="color: #27ae60;"></i>
+                <span>Print Bills</span>
+            </a>
+            <a href="linkhire.html" class="box hire-box">
+                <i class="fas fa-wallet" style="color: #d35400;"></i>
+                <span>Expenses</span>
+            </a>
         </div>
 
         <div class="footer-info">
@@ -155,31 +197,35 @@
             btnText.innerText = frame.classList.contains('desktop-mode') ? "Mobile Mode" : "Desktop Mode";
         }
 
+        // Supabase Fetch Function (Same as your code)
         async function fetchLiveData() {
             try {
-                const { data: trans, error: e1 } = await supabaseClient.from('transactions').select('*');
-                const { data: pays, error: e2 } = await supabaseClient.from('payments').select('*');
+                // Check if supabaseClient is defined in config.js
+                if (typeof supabaseClient !== 'undefined') {
+                    const { data: trans, error: e1 } = await supabaseClient.from('transactions').select('*');
+                    const { data: pays, error: e2 } = await supabaseClient.from('payments').select('*');
 
-                if (e1 || e2) throw e1 || e2;
+                    if (e1 || e2) throw e1 || e2;
 
-                let cashIn = 0, cashOut = 0, totalDue = 0;
-                
-                trans.forEach(item => {
-                    cashIn += parseFloat(item.paid_amount || 0);
-                    totalDue += parseFloat(item.due_amount || 0);
-                });
-
-                if(pays) {
-                    pays.forEach(p => {
-                        if(p.payment_type === 'took') cashIn += parseFloat(p.amount || 0);
-                        if(p.payment_type === 'gave') cashOut += parseFloat(p.amount || 0);
+                    let cashIn = 0, cashOut = 0, totalDue = 0;
+                    
+                    trans.forEach(item => {
+                        cashIn += parseFloat(item.paid_amount || 0);
+                        totalDue += parseFloat(item.due_amount || 0);
                     });
-                }
 
-                document.getElementById('totalReceived').innerText = formatINR(cashIn);
-                document.getElementById('totalPayment').innerText = formatINR(cashOut);
-                document.getElementById('totalPrice').innerText = formatINR(cashIn - cashOut);
-                document.getElementById('paymentStatus').innerText = formatINR(totalDue - cashOut);
+                    if(pays) {
+                        pays.forEach(p => {
+                            if(p.payment_type === 'took') cashIn += parseFloat(p.amount || 0);
+                            if(p.payment_type === 'gave') cashOut += parseFloat(p.amount || 0);
+                        });
+                    }
+
+                    document.getElementById('totalReceived').innerText = formatINR(cashIn);
+                    document.getElementById('totalPayment').innerText = formatINR(cashOut);
+                    document.getElementById('totalPrice').innerText = formatINR(cashIn - cashOut);
+                    document.getElementById('paymentStatus').innerText = formatINR(totalDue - cashOut);
+                }
             } catch (err) {
                 console.error("Error loading dashboard:", err.message);
             }
