@@ -29,6 +29,7 @@
         .login-box {
             background: white; padding: 30px; border-radius: 15px; 
             text-align: center; width: 85%; max-width: 350px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         }
 
         .top-bar {
@@ -89,7 +90,7 @@
         }
         .modal-content { background: white; padding: 20px; border-radius: 15px; width: 100%; max-width: 350px; }
         .modal-content select, .modal-content input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }
-        .submit-btn { width: 100%; background: var(--secondary); color: white; padding: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .submit-btn { width: 100%; background: var(--secondary); color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .footer-info { font-size: 11px; color: #aaa; margin-top: 30px; padding: 20px; text-align: center; }
     </style>
 </head>
@@ -98,10 +99,11 @@
     <div id="loginOverlay">
         <div class="login-box">
             <i class="fas fa-user-shield" style="font-size: 40px; color: var(--primary); margin-bottom: 15px;"></i>
-            <h2>Verify Account</h2>
-            <p style="font-size: 12px; color: #666;">Enter your registered mobile number</p>
-            <input type="tel" id="loginPhone" placeholder="Mobile Number" style="width:100%; padding:12px; margin:15px 0; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;">
-            <button onclick="handleLogin()" class="submit-btn">LOGIN NOW</button>
+            <h2 style="margin: 10px 0;">Verify Account</h2>
+            <p style="font-size: 12px; color: #666; margin-bottom: 20px;">Enter your registered mobile number</p>
+            <input type="tel" id="loginPhone" placeholder="Mobile Number" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box; font-size: 16px;">
+            <button onclick="handleLogin()" id="loginBtn" class="submit-btn">LOGIN NOW</button>
+            <p id="errorMsg" style="color: red; font-size: 12px; margin-top: 10px; display: none;"></p>
         </div>
     </div>
 
@@ -117,7 +119,7 @@
     <div class="phone-frame" id="mainFrame">
         <header>
             <h1>Business Dashboard</h1>
-            <p id="welcomeUser" style="font-size: 12px; color: var(--secondary);"></p>
+            <p id="welcomeUser" style="font-size: 14px; color: var(--secondary); font-weight: bold;"></p>
         </header>
 
         <div class="stats-grid">
@@ -176,30 +178,52 @@
     <script>
         // --- LOGIN LOGIC ---
         async function handleLogin() {
-            const phone = document.getElementById('loginPhone').value;
-            if(!phone) { alert("Please enter mobile number"); return; }
+            const phone = document.getElementById('loginPhone').value.trim();
+            const errorMsg = document.getElementById('errorMsg');
+            const loginBtn = document.getElementById('loginBtn');
+
+            if(!phone) { 
+                showError("Please enter mobile number"); 
+                return; 
+            }
 
             try {
-                // 'account' টেবিল থেকে মোবাইল নম্বর চেক করা হচ্ছে
-                const { data, error } = await supabaseClient
-                    .from('account')
-                    .select('*')
-                    .eq('mobile', phone) // নিশ্চিত করুন আপনার কলামের নাম 'mobile'
-                    .single();
+                loginBtn.innerText = "Verifying...";
+                loginBtn.disabled = true;
+                errorMsg.style.display = 'none';
 
-                if (error || !data) {
-                    alert("Account not found! Please contact admin.");
+                // আপনার টেবিলের নাম 'accounts' ব্যবহার করা হয়েছে
+                const { data, error } = await supabaseClient
+                    .from('accounts') 
+                    .select('*')
+                    .eq('mobile', phone);
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    showError("Account not found! Please contact admin.");
+                    loginBtn.innerText = "LOGIN NOW";
+                    loginBtn.disabled = false;
                 } else {
                     // Success Login
+                    const user = data[0];
                     document.getElementById('loginOverlay').style.display = 'none';
                     document.getElementById('mainFrame').style.display = 'block';
                     document.getElementById('navBar').style.display = 'flex';
-                    document.getElementById('welcomeUser').innerText = "Welcome back: " + phone;
-                    fetchLiveData(); // লোড ডাটা
+                    document.getElementById('welcomeUser').innerText = "User: " + (user.name || phone);
+                    fetchLiveData(); 
                 }
             } catch (err) {
-                alert("Connection Error: " + err.message);
+                showError("Connection Error: " + err.message);
+                loginBtn.innerText = "LOGIN NOW";
+                loginBtn.disabled = false;
             }
+        }
+
+        function showError(msg) {
+            const errorMsg = document.getElementById('errorMsg');
+            errorMsg.innerText = msg;
+            errorMsg.style.display = 'block';
         }
 
         // --- DASHBOARD FUNCTIONS ---
@@ -222,10 +246,12 @@
                     if (e1 || e2) throw e1 || e2;
 
                     let cashIn = 0, cashOut = 0, totalDue = 0;
-                    trans.forEach(item => {
-                        cashIn += parseFloat(item.paid_amount || 0);
-                        totalDue += parseFloat(item.due_amount || 0);
-                    });
+                    if(trans) {
+                        trans.forEach(item => {
+                            cashIn += parseFloat(item.paid_amount || 0);
+                            totalDue += parseFloat(item.due_amount || 0);
+                        });
+                    }
                     if(pays) {
                         pays.forEach(p => {
                             if(p.payment_type === 'took') cashIn += parseFloat(p.amount || 0);
@@ -238,7 +264,7 @@
                     document.getElementById('paymentStatus').innerText = formatINR(totalDue - cashOut);
                 }
             } catch (err) {
-                console.error("Error loading dashboard:", err.message);
+                console.error("Dashboard Error:", err.message);
             }
         }
 
