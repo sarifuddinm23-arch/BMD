@@ -10,7 +10,7 @@
     <style>
         :root { 
             --primary: #f39c12; --dark: #1a1a1a; --bg: #f0f2f5; 
-            --white: #ffffff; --shadow: 0 4px 15px rgba(0,0,0,0.1);
+            --white: #white; --shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); transition: 0.3s; }
@@ -21,10 +21,10 @@
         .desktop-mode { max-width: 1100px !important; }
 
         .acc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; padding: 10px 0; }
-        .acc-box { background: var(--white); border-radius: 15px; padding: 20px 15px; text-align: center; box-shadow: var(--shadow); cursor: pointer; transition: 0.3s; border-bottom: 4px solid transparent; position: relative; text-decoration: none; color: inherit; display: block; }
+        .acc-box { background: white; border-radius: 15px; padding: 20px 15px; text-align: center; box-shadow: var(--shadow); cursor: pointer; transition: 0.3s; border-bottom: 4px solid transparent; position: relative; text-decoration: none; color: inherit; display: block; }
         .acc-box:hover { transform: translateY(-5px); border-color: var(--primary); }
         
-        .edit-icon { position: absolute; top: 10px; right: 10px; color: var(--primary); background: #fff3e0; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid #ffe0b2; }
+        .edit-icon { position: absolute; top: 10px; right: 10px; color: var(--primary); background: #fff3e0; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid #ffe0b2; z-index: 10; }
 
         .acc-box img { width: 60px; height: 60px; border-radius: 50%; margin-bottom: 10px; border: 2px solid #eee; object-fit: cover; }
         .acc-box h3 { margin: 10px 0 5px; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -137,11 +137,10 @@
         editMode = false;
         document.getElementById('formTitle').innerText = "নতুন অ্যাকাউন্ট তৈরি";
         document.getElementById('editId').value = "";
-        document.querySelectorAll('input').forEach(i => i.value = '');
+        document.querySelectorAll('#addForm input').forEach(i => i.value = '');
         toggleForm(true);
     }
 
-    // Convert Image to Base64
     document.getElementById('imageInput').addEventListener('change', function() {
         const file = this.files[0];
         if (file) {
@@ -162,8 +161,8 @@
             const avatar = acc.image_url || `https://ui-avatars.com/api/?name=${acc.name}&background=random&color=fff`;
             list.innerHTML += `
                 <div class="acc-box">
-                    <div class="edit-icon" onclick="editAccount('${acc.id}')"><i class="fas fa-pen"></i></div>
-                    <a href="product.html">
+                    <div class="edit-icon" onclick="event.stopPropagation(); editAccount('${acc.id}')"><i class="fas fa-pen"></i></div>
+                    <a href="profile.html?name=${encodeURIComponent(acc.name)}" style="text-decoration:none; color:inherit;">
                         <img src="${avatar}" alt="user">
                         <span class="tag">${acc.acc_type || 'Retailer'}</span>
                         <h3>${acc.name}</h3>
@@ -234,7 +233,6 @@
     }
 
     async function updateBalance(accId) {
-        // Balance logic stays same as before
         document.getElementById(`bal-${accId}`).innerText = "₹ 0.00"; 
     }
 
