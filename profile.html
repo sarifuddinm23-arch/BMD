@@ -71,7 +71,7 @@
 <div class="icon-nav no-print">
     <a href="received_product.html" class="nav-link"><i class="fas fa-plus-circle"></i><span>Add Rec.</span></a>
     <a href="sell_product.html" class="nav-link"><i class="fas fa-shopping-cart"></i><span>Add Sell</span></a>
-    <div class="nav-link" onclick="openPaymentModal()"><i class="fas fa-wallet"></i><span>Payment</span></div>
+    <div class="nav-link" onclick="location.href='payments.html?name=' + encodeURIComponent(accName)"><i class="fas fa-wallet"></i><span>Payment</span></div>
     <div class="nav-link" onclick="printStatement()"><i class="fas fa-file-invoice"></i><span>Statement</span></div>
     <div class="nav-link" onclick="location.reload()"><i class="fas fa-sync-alt"></i><span>Refresh</span></div>
 </div>
