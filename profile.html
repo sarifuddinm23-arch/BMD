@@ -10,22 +10,38 @@
     <style>
         :root { --primary: #f39c12; --dark: #0f172a; --bg: #f8fafc; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; }
+        
+        /* UI Components */
         .header { background: var(--dark); color: white; padding: 20px; display: flex; align-items: center; gap: 15px; position: sticky; top:0; z-index:100; }
         .balance-card { background: #1e293b; color: white; margin: 20px; padding: 25px; border-radius: 20px; text-align: center; }
         .balance-card h1 { font-size: 32px; margin: 10px 0; color: #fbbf24; }
         .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 0 20px; }
         .stat-box { background: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-left: 4px solid var(--primary); }
         .stat-box h2 { margin: 5px 0 0; font-size: 18px; }
+
+        /* Payment List History */
         .history-section { padding: 20px; }
         .history-card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .status-received { color: #16a34a; font-weight: bold; }
         .status-payout { color: #dc2626; font-weight: bold; }
+        
+        /* Modal */
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
         .modal { background: white; width: 90%; max-width: 400px; padding: 25px; border-radius: 24px; }
         .input-group { margin-bottom: 15px; }
         input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
         .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; border: none; cursor: pointer; box-shadow: 0 10px 15px rgba(243, 156, 18, 0.3); }
-        @media print { .no-print { display: none !important; } #printArea { display: block !important; } }
+
+        /* Printing Style */
+        @media print {
+            .no-print { display: none !important; }
+            #printArea { display: block !important; width: 100% !important; }
+            body { background: white; }
+        }
+        
+        .print-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .print-table th, .print-table td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
+        .invoice-title { text-align: center; font-size: 22px; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -47,20 +63,30 @@
 
 <div class="history-section no-print">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-        <h3>Ledger History</h3>
-        <button onclick="showPrintModal()" style="padding:8px 15px; border-radius:8px; border:1px solid #ccc; background:white;"><i class="fas fa-print"></i> Statement</button>
+        <h3><i class="fas fa-list"></i> Payment History</h3>
+        <button onclick="showPrintModal()" style="padding:8px 15px; border-radius:8px; border:1px solid #ccc; background:white; cursor:pointer;"><i class="fas fa-print"></i> Statement</button>
     </div>
     <div id="paymentList"></div>
 </div>
 
-<div id="printArea" style="display:none; padding:30px; font-family:sans-serif;">
-    <h2 style="text-align:center;">STATEMENT INVOICE</h2>
-    <hr>
-    <div id="printHeader" style="margin:20px 0;"></div>
-    <table border="1" width="100%" style="border-collapse: collapse;">
-        <thead><tr style="background:#eee;"><th>Date</th><th>Status</th><th>Mode</th><th>Amount</th><th>Balance</th></tr></thead>
-        <tbody id="printBody" style="text-align:center;"></tbody>
+<div id="printArea" style="display:none; padding:20px;">
+    <div class="invoice-title">INVOICE STATEMENT</div>
+    <div id="printHeader" style="margin-top:20px; line-height: 1.6;"></div>
+    <table class="print-table">
+        <thead>
+            <tr style="background:#f2f2f2;">
+                <th>Date</th>
+                <th>Status</th>
+                <th>Mode</th>
+                <th>Amount</th>
+                <th>Balance</th>
+            </tr>
+        </thead>
+        <tbody id="printBody"></tbody>
     </table>
+    <div style="margin-top:20px; text-align:right;">
+        <p>Software Generated Statement</p>
+    </div>
 </div>
 
 <button class="fab no-print" onclick="openModal()"><i class="fas fa-plus"></i></button>
@@ -72,8 +98,8 @@
         <div class="input-group"><label>Type</label><select id="payStatus"><option value="Received">Received (আমি পেলাম)</option><option value="Payout">Payout (আমি দিলাম)</option></select></div>
         <div class="input-group"><label>Amount</label><input type="number" id="payAmount" autofocus placeholder="0.00"></div>
         <div class="input-group"><label>Mode</label><select id="payMode"><option value="Cash">Cash</option><option value="Online">Online</option></select></div>
-        <button onclick="savePayment()" id="saveBtn" style="width:100%; background:var(--dark); color:white; padding:15px; border:none; border-radius:12px; font-weight:bold;">SAVE & ENTER</button>
-        <button onclick="closeModal()" style="width:100%; background:none; border:none; margin-top:10px; color:gray;">Cancel</button>
+        <button onclick="savePayment()" id="saveBtn" style="width:100%; background:var(--dark); color:white; padding:15px; border:none; border-radius:12px; font-weight:bold; cursor:pointer;">SAVE & ENTER</button>
+        <button onclick="closeModal()" style="width:100%; background:none; border:none; margin-top:10px; color:gray; cursor:pointer;">Cancel</button>
     </div>
 </div>
 
@@ -84,52 +110,157 @@
     let accInfo = {};
 
     async function init() {
+        if(!accName) return;
+
+        // 1. Fetch Account Info
         const { data: acc } = await supabaseClient.from('accounts').select('*').eq('name', accName).single();
-        if(acc) { accInfo = acc; document.getElementById('profileName').innerText = acc.name; document.getElementById('profileAddress').innerText = acc.mobile; }
+        if(acc) { 
+            accInfo = acc; 
+            document.getElementById('profileName').innerText = acc.name; 
+            document.getElementById('profileAddress').innerText = `${acc.mobile} | ${acc.address || ''}`; 
+        }
         
+        // 2. Calculate Total Inward Value
         const { data: prods } = await supabaseClient.from('received_products').select('total_price').eq('supplier_name', accName);
-        let initialDebt = prods?.reduce((sum, p) => sum + (p.total_price || 0), 0) || 0;
+        let initialDebt = prods?.reduce((sum, p) => sum + (parseFloat(p.total_price) || 0), 0) || 0;
         document.getElementById('totalValue').innerText = `₹ ${initialDebt.toFixed(2)}`;
         
         loadPayments(initialDebt);
     }
 
     async function loadPayments(debt) {
-        const { data: pays } = await supabaseClient.from('payments').select('*').eq('acc_name', accName).order('payment_date', {ascending: true});
+        const { data: pays, error } = await supabaseClient.from('payments').select('*').eq('acc_name', accName).order('payment_date', {ascending: true});
+        
         let runningDue = debt;
         const list = document.getElementById('paymentList');
         list.innerHTML = '';
-        pays?.forEach(p => {
-            if(p.status === 'Received') runningDue -= p.amount; else runningDue += p.amount;
-            list.innerHTML += `<div class="history-card"><div><div class="${p.status === 'Received' ? 'status-received' : 'status-payout'}">${p.status}</div><small>${p.payment_date} (${p.mode})</small></div><div style="text-align:right"><b>₹ ${p.amount}</b><br><small>Bal: ₹ ${runningDue.toFixed(2)}</small></div></div>`;
-        });
+        
+        if(pays) {
+            pays.forEach(p => {
+                if(p.status === 'Received') runningDue -= p.amount; else runningDue += p.amount;
+                
+                list.innerHTML += `
+                    <div class="history-card">
+                        <div>
+                            <div class="${p.status === 'Received' ? 'status-received' : 'status-payout'}">
+                                ${p.status === 'Received' ? '<i class="fas fa-arrow-down"></i> Received' : '<i class="fas fa-arrow-up"></i> Payout'}
+                            </div>
+                            <small>${p.payment_date} (${p.mode})</small>
+                        </div>
+                        <div style="text-align:right">
+                            <div style="font-weight:bold">₹ ${parseFloat(p.amount).toFixed(2)}</div>
+                            <small style="color:gray">Balance: ₹ ${runningDue.toFixed(2)}</small>
+                        </div>
+                    </div>`;
+            });
+
+            if(pays.length > 0) {
+                document.getElementById('lastPay').innerText = `₹ ${parseFloat(pays[pays.length-1].amount).toFixed(2)}`;
+            }
+        }
+        
         currentDue = runningDue;
         document.getElementById('liveDue').innerText = `₹ ${runningDue.toFixed(2)}`;
     }
 
-    function openModal() { document.getElementById('payModal').style.display = 'flex'; document.getElementById('payDate').valueAsDate = new Date(); }
+    function openModal() { 
+        document.getElementById('payModal').style.display = 'flex'; 
+        document.getElementById('payDate').valueAsDate = new Date(); 
+        document.getElementById('payAmount').focus();
+    }
+    
     function closeModal() { document.getElementById('payModal').style.display = 'none'; }
 
     async function savePayment() {
         const amt = parseFloat(document.getElementById('payAmount').value);
-        if(!amt) return;
+        const date = document.getElementById('payDate').value;
         const status = document.getElementById('payStatus').value;
-        const payload = { acc_name: accName, payment_date: document.getElementById('payDate').value, status: status, amount: amt, mode: document.getElementById('payMode').value, balance: status === 'Received' ? currentDue - amt : currentDue + amt };
-        await supabaseClient.from('payments').insert([payload]);
-        closeModal(); init();
+        const mode = document.getElementById('payMode').value;
+
+        if(!amt || !date) return alert("Please fill all details");
+
+        const btn = document.getElementById('saveBtn');
+        btn.disabled = true;
+        btn.innerText = "Saving...";
+
+        const newBalance = (status === 'Received') ? (currentDue - amt) : (currentDue + amt);
+
+        const { error } = await supabaseClient.from('payments').insert([{
+            acc_name: accName,
+            payment_date: date,
+            status: status,
+            amount: amt,
+            mode: mode,
+            balance: newBalance
+        }]);
+
+        if(error) {
+            alert("Error: " + error.message);
+        } else {
+            closeModal();
+            init(); // Refresh data and list
+        }
+        btn.disabled = false;
+        btn.innerText = "SAVE & ENTER";
     }
 
     async function showPrintModal() {
-        const start = prompt("Start Date:", "2024-01-01");
-        const end = prompt("End Date:", new Date().toISOString().split('T')[0]);
-        const { data: logs } = await supabaseClient.from('payments').select('*').eq('acc_name', accName).gte('payment_date', start).lte('payment_date', end);
-        document.getElementById('printHeader').innerHTML = `<b>Name:</b> ${accInfo.name} | <b>Mobile:</b> ${accInfo.mobile}<br><b>Address:</b> ${accInfo.address}<br><b>Period:</b> ${start} to ${end}`;
-        const tbody = document.getElementById('printBody'); tbody.innerHTML = '';
-        logs.forEach(l => { tbody.innerHTML += `<tr><td>${l.payment_date}</td><td>${l.status}</td><td>${l.mode}</td><td>₹ ${l.amount}</td><td>₹ ${l.balance}</td></tr>`; });
+        const start = prompt("Enter Start Date (YYYY-MM-DD):", "2024-01-01");
+        const end = prompt("Enter End Date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+        
+        if(!start || !end) return;
+
+        const { data: logs } = await supabaseClient.from('payments')
+            .select('*')
+            .eq('acc_name', accName)
+            .gte('payment_date', start)
+            .lte('payment_date', end)
+            .order('payment_date', {ascending: true});
+
+        if(!logs || logs.length === 0) return alert("No transactions found in this date range.");
+
+        // Invoice Header Details
+        document.getElementById('printHeader').innerHTML = `
+            <table width="100%" style="font-size:14px;">
+                <tr>
+                    <td><strong>Name:</strong> ${accInfo.name}</td>
+                    <td align="right"><strong>Date:</strong> ${new Date().toLocaleDateString()}</td>
+                </tr>
+                <tr>
+                    <td><strong>Mobile:</strong> ${accInfo.mobile}</td>
+                    <td align="right"><strong>Address:</strong> ${accInfo.address || 'N/A'}, ${accInfo.state || ''}</td>
+                </tr>
+                <tr>
+                    <td><strong>PIN:</strong> ${accInfo.pin || ''}</td>
+                    <td align="right"><strong>Statement Period:</strong> ${start} to ${end}</td>
+                </tr>
+            </table>
+        `;
+
+        const tbody = document.getElementById('printBody');
+        tbody.innerHTML = '';
+        logs.forEach(l => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${l.payment_date}</td>
+                    <td>${l.status}</td>
+                    <td>${l.mode}</td>
+                    <td>₹ ${parseFloat(l.amount).toFixed(2)}</td>
+                    <td>₹ ${parseFloat(l.balance).toFixed(2)}</td>
+                </tr>`;
+        });
+
+        // Trigger Print
         window.print();
     }
 
-    window.addEventListener('keydown', (e) => { if(e.key === 'Enter' && document.getElementById('payModal').style.display === 'flex') savePayment(); });
+    // Keyboard ENTER key listener
+    window.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter' && document.getElementById('payModal').style.display === 'flex') {
+            savePayment();
+        }
+    });
+
     window.onload = init;
 </script>
 </body>
