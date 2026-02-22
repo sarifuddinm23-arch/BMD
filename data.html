@@ -3,105 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Entry - BMD</title>
+    <title>Master Data Entry - BMD</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --primary: #f39c12; --dark: #1a1a1a; --bg: #f4f7f6; }
+        :root { --primary: #f39c12; --dark: #1a1a1a; --bg: #f0f2f5; --white: #ffffff; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; }
-        .top-bar { background: var(--dark); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; }
-        .mode-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 5px 10px; border-radius: 15px; cursor: pointer; font-size: 12px; }
         
-        .container { width: 95%; max-width: 420px; margin: 20px auto; transition: 0.4s; }
-        .desktop-mode { max-width: 1100px !important; }
+        .top-bar { background: var(--dark); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; z-index: 1000; }
+        .mode-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 12px; }
+        
+        .container { width: 95%; max-width: 450px; margin: 20px auto; transition: 0.4s; }
+        .desktop-mode { max-width: 1000px !important; }
 
-        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .add-btn { background: var(--primary); color: white; border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #f8f9fa; padding-bottom: 10px; }
+        .card-header h3 { margin: 0; font-size: 18px; color: var(--dark); }
         
-        .data-list { list-style: none; padding: 0; margin: 0; max-height: 250px; overflow-y: auto; }
-        .data-list li { padding: 12px; border-bottom: 1px solid #f8f9fa; font-size: 14px; display: flex; justify-content: space-between; }
+        .add-btn { background: var(--primary); color: white; border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(243, 156, 18, 0.3); }
+
+        /* Data List Styling */
+        .data-list { list-style: none; padding: 0; margin: 0; }
+        .data-item { background: #fdfdfd; padding: 12px 15px; border: 1px solid #f1f1f1; border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        .data-item:hover { border-color: var(--primary); background: #fff; }
+        .info b { display: block; color: var(--dark); font-size: 14px; }
+        .info span { font-size: 11px; color: #888; text-transform: uppercase; }
         
-        .grid-layout { display: grid; grid-template-columns: 1fr; gap: 20px; }
-        .desktop-mode .grid-layout { grid-template-columns: 1fr 1fr 1fr; }
+        .actions { display: flex; gap: 10px; }
+        .actions i { cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .fa-edit { color: #3498db; }
+        .fa-trash { color: #e74c3c; }
+        .actions i:hover { transform: scale(1.2); }
+
+        /* Form Overlay */
+        .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        .form-box { background: white; width: 100%; max-width: 350px; padding: 25px; border-radius: 20px; position: relative; }
+        .form-box h2 { margin-top: 0; font-size: 20px; margin-bottom: 20px; }
+        
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; outline: none; box-sizing: border-box; }
+        input:focus { border-color: var(--primary); }
+        
+        .save-btn { width: 100%; background: var(--dark); color: white; border: none; padding: 14px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <div onclick="history.back()" style="cursor:pointer;"><i class="fas fa-arrow-left"></i> DATA ENTRY</div>
-    <button class="mode-btn" onclick="toggleView()"><i class="fas fa-desktop"></i> Toggle View</button>
+    <div onclick="window.location.href='admin.html'" style="cursor:pointer;"><i class="fas fa-arrow-left"></i> MASTER DATA</div>
+    <button class="mode-btn" onclick="toggleView()"><i class="fas fa-desktop"></i> PC View</button>
 </div>
 
 <div class="container" id="mainWrapper">
-    <div class="grid-layout">
+    <div class="card">
+        <div class="card-header">
+            <h3>Product Categories</h3>
+            <button class="add-btn" onclick="openForm()"><i class="fas fa-plus"></i></button>
+        </div>
+        <div id="categoryList" class="data-list">
+            <p style="text-align: center; color: #aaa; font-size: 13px;">Loading data...</p>
+        </div>
+    </div>
+</div>
+
+<div class="overlay" id="formOverlay">
+    <div class="form-box">
+        <i class="fas fa-times" onclick="closeForm()" style="position:absolute; top:20px; right:20px; cursor:pointer; color:#999;"></i>
+        <h2 id="formTitle">Add Category</h2>
+        <input type="hidden" id="editId">
         
-        <div class="card">
-            <div class="card-header">
-                <h3>Mother Category</h3>
-                <button class="add-btn" onclick="addEntry('mother_categories')"><i class="fas fa-plus"></i></button>
-            </div>
-            <ul id="motherList" class="data-list"></ul>
+        <div class="input-group">
+            <label>Mother Category Name</label>
+            <input type="text" id="catName" placeholder="e.g. Mobile, Oil, Electronics">
         </div>
-
-        <div class="card">
-            <div class="card-header">
-                <h3>Sub Category</h3>
-                <button class="add-btn" onclick="addEntry('sub_categories')"><i class="fas fa-plus"></i></button>
-            </div>
-            <ul id="subList" class="data-list"></ul>
+        
+        <div class="input-group">
+            <label>Sub Category Name</label>
+            <input type="text" id="subName" placeholder="e.g. Samsung, Mustard, Hardware">
         </div>
-
-        <div class="card">
-            <div class="card-header">
-                <h3>Product Name</h3>
-                <button class="add-btn" onclick="addEntry('product_list')"><i class="fas fa-plus"></i></button>
-            </div>
-            <ul id="productList" class="data-list"></ul>
-        </div>
-
+        
+        <button class="save-btn" onclick="saveData()" id="saveBtn">SAVE DATA</button>
     </div>
 </div>
 
 <script>
-    function toggleView() {
-        document.getElementById('mainWrapper').classList.toggle('desktop-mode');
-    }
+    let isEdit = false;
 
-    // Generic Fetch Function
-    async function fetchData(tableName, elementId) {
-        const { data } = await supabaseClient.from(tableName).select('name').order('created_at', { ascending: false });
-        const list = document.getElementById(elementId);
+    function toggleView() { document.getElementById('mainWrapper').classList.toggle('desktop-mode'); }
+    function openForm() { 
+        isEdit = false;
+        document.getElementById('formTitle').innerText = "Add New Entry";
+        document.getElementById('editId').value = "";
+        document.getElementById('catName').value = "";
+        document.getElementById('subName').value = "";
+        document.getElementById('formOverlay').style.display = 'flex'; 
+    }
+    function closeForm() { document.getElementById('formOverlay').style.display = 'none'; }
+
+    async function loadCategories() {
+        const { data, error } = await supabaseClient.from('mother_categories').select('*').order('created_at', { ascending: false });
+        const list = document.getElementById('categoryList');
         list.innerHTML = '';
-        if (data) {
+
+        if (data && data.length > 0) {
             data.forEach(item => {
-                list.innerHTML += `<li>${item.name} <i class="fas fa-check" style="color: #27ae60"></i></li>`;
+                list.innerHTML += `
+                    <div class="data-item">
+                        <div class="info">
+                            <span>Mother: ${item.name}</span>
+                            <b>Sub: ${item.sub_name || 'N/A'}</b>
+                        </div>
+                        <div class="actions">
+                            <i class="fas fa-edit" onclick="editEntry('${item.id}', '${item.name}', '${item.sub_name}')"></i>
+                            <i class="fas fa-trash" onclick="deleteEntry('${item.id}')"></i>
+                        </div>
+                    </div>`;
             });
-        }
-    }
-
-    // Generic Add Function (No Logic, Just Name)
-    async function addEntry(tableName) {
-        const val = prompt("Enter Name to Save:");
-        if (!val) return;
-        
-        const { error } = await supabaseClient.from(tableName).insert([{ name: val }]);
-        
-        if (error) {
-            alert("Error: " + error.message);
         } else {
-            loadAll(); // Refresh Lists
+            list.innerHTML = '<p style="text-align:center; color:#ccc;">No data found</p>';
         }
     }
 
-    function loadAll() {
-        fetchData('mother_categories', 'motherList');
-        fetchData('sub_categories', 'subList');
-        fetchData('product_list', 'productList');
+    async function saveData() {
+        const name = document.getElementById('catName').value;
+        const sub_name = document.getElementById('subName').value;
+        const id = document.getElementById('editId').value;
+        const btn = document.getElementById('saveBtn');
+
+        if (!name || !sub_name) return alert("Please fill both boxes!");
+
+        btn.disabled = true;
+        btn.innerText = "Saving...";
+
+        let response;
+        if (isEdit) {
+            response = await supabaseClient.from('mother_categories').update({ name, sub_name }).eq('id', id);
+        } else {
+            response = await supabaseClient.from('mother_categories').insert([{ name, sub_name }]);
+        }
+
+        if (response.error) {
+            alert("Error: " + response.error.message);
+        } else {
+            closeForm();
+            loadCategories();
+        }
+        btn.disabled = false;
+        btn.innerText = "SAVE DATA";
     }
 
-    window.onload = loadAll;
+    function editEntry(id, name, sub) {
+        isEdit = true;
+        document.getElementById('formTitle').innerText = "Edit Entry";
+        document.getElementById('editId').value = id;
+        document.getElementById('catName').value = name;
+        document.getElementById('subName').value = sub === 'null' ? '' : sub;
+        document.getElementById('formOverlay').style.display = 'flex';
+    }
+
+    async function deleteEntry(id) {
+        if (confirm("Are you sure to delete this category?")) {
+            const { error } = await supabaseClient.from('mother_categories').delete().eq('id', id);
+            if (error) alert(error.message);
+            else loadCategories();
+        }
+    }
+
+    window.onload = loadCategories;
 </script>
 </body>
 </html>
