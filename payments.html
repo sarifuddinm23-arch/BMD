@@ -1,264 +1,166 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BMD - Payment Ledger</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Payment - BMD</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <style>
-        :root { --primary: #f39c12; --dark: #1a1a1a; --bg: #f4f4f9; --success: #27ae60; --danger: #e74c3c; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); transition: all 0.3s; }
+        :root { --primary: #10b981; --secondary: #3b82f6; --dark: #0f172a; --bg: #f1f5f9; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         
-        /* Top Bar */
-        .top-bar { background: var(--dark); padding: 12px 20px; color: white; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
-        .mode-btn { background: #333; color: #fff; border: 1px solid #555; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .payment-card { background: white; width: 95%; max-width: 450px; padding: 25px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 8px solid var(--secondary); }
+        .header { display: flex; align-items: center; margin-bottom: 20px; gap: 15px; }
+        .header i { font-size: 20px; cursor: pointer; color: var(--dark); }
+        .header h2 { margin: 0; font-size: 20px; color: var(--dark); }
 
-        /* Container Modes */
-        .container { max-width: 450px; margin: 20px auto; padding: 0 15px; transition: max-width 0.4s; }
-        .desktop-mode { max-width: 1000px !important; }
+        .acc-info { background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 20px; border-left: 4px solid var(--primary); }
+        .acc-info p { margin: 5px 0; font-size: 14px; color: #64748b; }
+        .acc-info b { color: var(--dark); font-size: 16px; }
 
-        .box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        
-        label { display: block; margin-top: 15px; font-weight: bold; font-size: 13px; color: #555; }
-        input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
-        
-        .balance-card { background: var(--dark); color: var(--primary); padding: 20px; border-radius: 10px; text-align: center; }
-        .balance-card h2 { margin: 5px 0; font-size: 28px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+        input, select { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px; transition: 0.3s; box-sizing: border-box; }
+        input:focus, select:focus { border-color: var(--secondary); outline: none; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
 
-        .btn-save { background: var(--primary); color: #000; border: none; padding: 16px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        
-        /* History Table */
-        .history-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; min-width: 500px; }
-        th { background: #f8f9fa; color: #777; font-weight: 600; text-transform: uppercase; font-size: 11px; }
-        th, td { border-bottom: 1px solid #eee; padding: 12px 10px; text-align: left; }
-        
-        .gave { color: var(--danger); font-weight: bold; } 
-        .took { color: var(--success); font-weight: bold; }
-        
-        /* Action Buttons */
-        .action-btns { display: flex; gap: 8px; }
-        .act-btn { border: none; padding: 6px 8px; border-radius: 4px; cursor: pointer; font-size: 14px; }
-        .edit-btn { background: #e3f2fd; color: #1976d2; }
-        .del-btn { background: #ffebee; color: #d32f2f; }
-        .wa-btn { background: #e8f5e9; color: #2e7d32; text-decoration: none; }
+        .balance-preview { background: #fff1f2; padding: 12px; border-radius: 10px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .balance-preview span { font-size: 13px; color: #be123c; font-weight: bold; }
+        .balance-preview h3 { margin: 0; color: #9f1239; font-size: 18px; }
 
-        /* Print Style - 4x6 logic */
-        @media print {
-            body * { visibility: hidden; }
-            #printArea, #printArea * { visibility: visible; }
-            #printArea { 
-                position: absolute; left: 0; top: 0; width: 100%; 
-                display: block !important; 
-            }
-            .inv-box { 
-                width: 101mm; /* 4x6 inch approximate */
-                height: 152mm;
-                border: 1px solid #000; 
-                padding: 20px; 
-                margin: 0 auto;
-                page-break-after: always;
-            }
-        }
+        .submit-btn { width: 100%; padding: 15px; background: var(--dark); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .submit-btn:hover { background: #1e293b; }
+        .key-hint { font-size: 10px; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px; }
     </style>
 </head>
-<body id="mainBody">
+<body>
 
-<div class="top-bar">
-    <div onclick="window.location.href='index.html'" style="cursor:pointer; font-weight: bold;">
-        <i class="fas fa-arrow-left"></i> BMD LEDGER
+<div class="payment-card">
+    <div class="header">
+        <i class="fas fa-arrow-left" onclick="history.back()"></i>
+        <h2>Payment Entry</h2>
     </div>
-    <button class="mode-btn" onclick="toggleView()"><i class="fas fa-desktop"></i> Desktop View</button>
-</div>
 
-<div class="container" id="contentContainer">
-    <div class="box">
-        <div class="balance-card">
-            <p style="margin:0; font-size: 12px; color: #aaa;">Current Due (বাকি)</p>
-            <h2 id="currentBalance">₹ 0.00</h2>
-        </div>
+    <div class="acc-info">
+        <p>Accounting For:</p>
+        <b id="displayName">Loading...</b>
+        <p>Current Due: <span id="currentDueDisplay" style="color:red">₹ 0.00</span></p>
+    </div>
 
-        <input type="hidden" id="editId"> <label>Select Party</label>
-        <select id="partySelect" onchange="loadPartyBalance()"></select>
+    <div class="form-group">
+        <label><i class="far fa-calendar-alt"></i> Date</label>
+        <input type="date" id="payDate">
+    </div>
 
-        <label>Transaction Type</label>
-        <select id="pType">
-            <option value="took">Money Received (টাকা নিলাম)</option>
-            <option value="gave">Money Paid (টাকা দিলাম)</option>
+    <div class="form-group">
+        <label><i class="fas fa-exchange-alt"></i> Payment Status</label>
+        <select id="payStatus">
+            <option value="Received">Received (আমি টাকা পেলাম)</option>
+            <option value="Payout">Payout (আমি টাকা দিলাম)</option>
         </select>
-
-        <label>Amount (টাকা)</label>
-        <input type="number" id="pAmount" placeholder="0.00">
-
-        <label>Note / Remarks</label>
-        <textarea id="pNote" placeholder="কি বাবদ লেনদেন..."></textarea>
-
-        <button class="btn-save" id="saveBtn" onclick="savePayment()">
-            <i class="fas fa-save"></i> SAVE PAYMENT
-        </button>
     </div>
 
-    <div class="box">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3 style="margin:0;">Recent History</h3>
-            <button onclick="fetchPayments()" class="mode-btn"><i class="fas fa-sync"></i></button>
-        </div>
-        <div class="history-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Type</th>
-                        <th>Amount</th>
-                        <th>Party</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="paymentList"></tbody>
-            </table>
-        </div>
+    <div class="form-group">
+        <label><i class="fas fa-rupee-sign"></i> Total Amount</label>
+        <input type="number" id="payAmount" placeholder="Enter amount here..." autofocus>
     </div>
-</div>
 
-<div id="printArea" style="display:none;">
-    <div class="inv-box" id="receiptContent"></div>
+    <div class="form-group">
+        <label><i class="fas fa-wallet"></i> Payment Mode</label>
+        <select id="payMode">
+            <option value="Cash">Cash</option>
+            <option value="Online">Online</option>
+        </select>
+    </div>
+
+    <div class="balance-preview">
+        <span>New Due Balance:</span>
+        <h3 id="newDueBalance">₹ 0.00</h3>
+    </div>
+
+    <button class="submit-btn" onclick="submitPayment()">
+        SAVE PAYMENT <span class="key-hint">Press ENTER</span>
+    </button>
 </div>
 
 <script>
-    let isDesktop = false;
+    const urlParams = new URLSearchParams(window.location.search);
+    const accName = urlParams.get('name');
+    let currentDue = 0;
 
-    function toggleView() {
-        isDesktop = !isDesktop;
-        const container = document.getElementById('contentContainer');
-        const btn = document.querySelector('.mode-btn');
-        if(isDesktop) {
-            container.classList.add('desktop-mode');
-            btn.innerHTML = '<i class="fas fa-mobile-alt"></i> Mobile View';
+    async function init() {
+        if(!accName) {
+            alert("Account name missing!");
+            return;
+        }
+        document.getElementById('displayName').innerText = accName;
+        document.getElementById('payDate').valueAsDate = new Date();
+
+        // ক্যালকুলেশন করার জন্য বর্তমান ডিউ ডাটা নিয়ে আসা
+        const { data: prods } = await supabaseClient.from('received_products').select('total_price').eq('supplier_name', accName);
+        const { data: pays } = await supabaseClient.from('payments').select('amount, status').eq('acc_name', accName);
+
+        let totalVal = prods?.reduce((sum, p) => sum + parseFloat(p.total_price || 0), 0) || 0;
+        let totalPaid = pays?.reduce((sum, p) => {
+            return p.status === 'Received' ? sum + parseFloat(p.amount) : sum - parseFloat(p.amount);
+        }, 0) || 0;
+
+        currentDue = totalVal - totalPaid;
+        document.getElementById('currentDueDisplay').innerText = "₹ " + currentDue.toFixed(2);
+        updatePreview();
+    }
+
+    function updatePreview() {
+        const amt = parseFloat(document.getElementById('payAmount').value) || 0;
+        const status = document.getElementById('payStatus').value;
+        const newDue = status === 'Received' ? currentDue - amt : currentDue + amt;
+        document.getElementById('newDueBalance').innerText = "₹ " + newDue.toFixed(2);
+    }
+
+    // Input ইভেন্ট লিসেনার
+    document.getElementById('payAmount').addEventListener('input', updatePreview);
+    document.getElementById('payStatus').addEventListener('change', updatePreview);
+
+    async function submitPayment() {
+        const amt = parseFloat(document.getElementById('payAmount').value);
+        const date = document.getElementById('payDate').value;
+        const status = document.getElementById('payStatus').value;
+        const mode = document.getElementById('payMode').value;
+
+        if(!amt || amt <= 0) {
+            alert("সঠিক অ্যামাউন্ট লিখুন!");
+            return;
+        }
+
+        const finalDue = status === 'Received' ? currentDue - amt : currentDue + amt;
+
+        const { error } = await supabaseClient.from('payments').insert([{
+            acc_name: accName,
+            payment_date: date,
+            status: status,
+            amount: amt,
+            mode: mode,
+            balance: finalDue
+        }]);
+
+        if(error) {
+            alert("Error: " + error.message);
         } else {
-            container.classList.remove('desktop-mode');
-            btn.innerHTML = '<i class="fas fa-desktop"></i> Desktop View';
+            alert("পেমেন্ট সফলভাবে সেভ হয়েছে!");
+            history.back(); // আগের পেজে (প্রোফাইলে) ফিরে যাবে
         }
     }
 
-    async function loadParties() {
-        const { data } = await supabaseClient.from('parties').select('*');
-        const select = document.getElementById('partySelect');
-        select.innerHTML = '<option value="">-- Choose Party --</option>';
-        data.forEach(p => select.innerHTML += `<option value="${p.id}" data-mob="${p.mobile}">${p.first_name}</option>`);
-    }
-
-    async function loadPartyBalance() {
-        const partyId = document.getElementById('partySelect').value;
-        if(!partyId) return;
-        const { data: trans } = await supabaseClient.from('transactions').select('due_amount').eq('party_id', partyId);
-        const { data: pays } = await supabaseClient.from('payments').select('amount, payment_type').eq('party_id', partyId);
-        let totalDue = (trans || []).reduce((sum, t) => sum + (parseFloat(t.due_amount) || 0), 0);
-        let paidAdjust = (pays || []).reduce((sum, p) => p.payment_type === 'gave' ? sum - parseFloat(p.amount) : sum + parseFloat(p.amount), 0); 
-        document.getElementById('currentBalance').innerText = "₹ " + (totalDue - paidAdjust).toFixed(2);
-    }
-
-    async function savePayment() {
-        const btn = document.getElementById('saveBtn');
-        const editId = document.getElementById('editId').value;
-        const partyId = document.getElementById('partySelect').value;
-        const amount = parseFloat(document.getElementById('pAmount').value);
-        const type = document.getElementById('pType').value;
-        const note = document.getElementById('pNote').value;
-
-        if(!partyId || isNaN(amount)) { alert("সব ঘর পূরণ করুন!"); return; }
-
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-
-        let response;
-        if(editId) {
-            response = await supabaseClient.from('payments').update({ party_id: partyId, amount, payment_type: type, note }).eq('id', editId).select();
-        } else {
-            response = await supabaseClient.from('payments').insert([{ party_id: partyId, amount, payment_type: type, note }]).select();
+    // মাউস ছাড়া কিবোর্ড দিয়ে কাজ করার জন্য (Enter Key Logic)
+    window.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            submitPayment();
         }
+    });
 
-        if(response.error) {
-            alert("Error: " + response.error.message);
-        } else {
-            alert(editId ? "Updated! ✅" : "Saved! ✅");
-            resetForm();
-            await fetchPayments();
-            await loadPartyBalance();
-        }
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save"></i> SAVE PAYMENT';
-    }
-
-    function resetForm() {
-        document.getElementById('editId').value = '';
-        document.getElementById('pAmount').value = '';
-        document.getElementById('pNote').value = '';
-        document.getElementById('saveBtn').innerHTML = '<i class="fas fa-save"></i> SAVE PAYMENT';
-    }
-
-    async function fetchPayments() {
-        const { data } = await supabaseClient.from('payments').select('*, parties(first_name, mobile)').order('created_at', {ascending: false});
-        const tbody = document.getElementById('paymentList');
-        tbody.innerHTML = '';
-        data.forEach(p => {
-            const waMsg = encodeURIComponent(`*BMD RECEIPT*\nParty: ${p.parties?.first_name}\nAmount: ₹${p.amount}\nType: ${p.payment_type}\nDate: ${new Date(p.created_at).toLocaleDateString()}`);
-            tbody.innerHTML += `
-                <tr>
-                    <td>${new Date(p.created_at).toLocaleDateString()}</td>
-                    <td class="${p.payment_type}">${p.payment_type.toUpperCase()}</td>
-                    <td>₹${p.amount}</td>
-                    <td>${p.parties?.first_name || 'N/A'}</td>
-                    <td class="action-btns">
-                        <button class="act-btn edit-btn" onclick='editEntry(${JSON.stringify(p)})'><i class="fas fa-edit"></i></button>
-                        <button class="act-btn del-btn" onclick="deleteEntry('${p.id}')"><i class="fas fa-trash"></i></button>
-                        <a href="https://wa.me/91${p.parties?.mobile}?text=${waMsg}" target="_blank" class="act-btn wa-btn"><i class="fab fa-whatsapp"></i></a>
-                        <button class="act-btn" style="background:#f1f1f1;" onclick='preparePrint(${JSON.stringify(p)})'><i class="fas fa-print"></i></button>
-                    </td>
-                </tr>`;
-        });
-    }
-
-    function editEntry(p) {
-        document.getElementById('editId').value = p.id;
-        document.getElementById('partySelect').value = p.party_id;
-        document.getElementById('pAmount').value = p.amount;
-        document.getElementById('pType').value = p.payment_type;
-        document.getElementById('pNote').value = p.note;
-        document.getElementById('saveBtn').innerHTML = '<i class="fas fa-check"></i> UPDATE PAYMENT';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    async function deleteEntry(id) {
-        if(confirm("আপনি কি এটি ডিলিট করতে চান?")) {
-            await supabaseClient.from('payments').delete().eq('id', id);
-            fetchPayments();
-        }
-    }
-
-    function preparePrint(p) {
-        const receipt = document.getElementById('receiptContent');
-        receipt.innerHTML = `
-            <div style="text-align:center;">
-                <h2 style="margin:0;">BMD BUSINESS</h2>
-                <p style="font-size:12px; margin:5px 0;">Payment Receipt</p>
-                <hr>
-            </div>
-            <p><strong>Party:</strong> ${p.parties?.first_name}</p>
-            <p><strong>Date:</strong> ${new Date(p.created_at).toLocaleString()}</p>
-            <p><strong>Type:</strong> ${p.payment_type.toUpperCase()}</p>
-            <div style="background:#f8f9fa; padding:15px; text-align:center; border-radius:8px; margin:15px 0;">
-                <h1 style="margin:0;">₹ ${p.amount}</h1>
-            </div>
-            <p><strong>Note:</strong> ${p.note || '-'}</p>
-            <hr>
-            <p style="text-align:center; font-size:10px;">Generated by BMD System</p>
-        `;
-        window.print();
-    }
-
-    window.onload = () => { loadParties(); fetchPayments(); };
+    window.onload = init;
 </script>
+
 </body>
 </html>
