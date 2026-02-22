@@ -20,6 +20,17 @@
             align-items: center; color: #333; transition: 0.3s;
         }
 
+        /* Login Overlay */
+        #loginOverlay {
+            position: fixed; inset: 0; background: var(--dark); 
+            z-index: 9999; display: flex; justify-content: center; align-items: center;
+        }
+
+        .login-box {
+            background: white; padding: 30px; border-radius: 15px; 
+            text-align: center; width: 85%; max-width: 350px;
+        }
+
         .top-bar {
             width: 100%; background: var(--dark); padding: 12px 20px;
             display: flex; justify-content: space-between; align-items: center;
@@ -27,9 +38,9 @@
             position: sticky; top: 0; z-index: 1000;
         }
 
-        .login-btn {
-            color: white; text-decoration: none; display: flex; align-items: center; gap: 8px;
-            font-size: 14px; background: var(--primary); padding: 5px 15px; border-radius: 20px;
+        .logout-btn {
+            color: white; text-decoration: none; background: var(--danger); 
+            padding: 5px 15px; border-radius: 20px; font-size: 13px; border: none; cursor: pointer;
         }
 
         .mode-btn {
@@ -40,7 +51,7 @@
 
         .phone-frame {
             width: 95%; max-width: 420px; min-height: 90vh;
-            margin-top: 20px; transition: all 0.4s ease;
+            margin-top: 20px; transition: all 0.4s ease; display: none; /* Hidden until login */
         }
 
         .desktop-mode { max-width: 1000px !important; }
@@ -48,27 +59,19 @@
         header { text-align: center; padding: 20px 0; }
         header h1 { font-size: 22px; text-transform: uppercase; color: var(--dark); margin: 0; }
 
-        .stats-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 10px;
-        }
-
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 10px; }
         .stat-card {
             background: var(--white); padding: 15px; border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-bottom: 4px solid #ddd;
         }
-
         .stat-card.received { border-color: var(--success); }
         .stat-card.payment { border-color: var(--danger); }
         .stat-card.balance { border-color: var(--primary); }
         .stat-card.due { border-color: #9b59b6; }
-
         .stat-label { font-size: 10px; font-weight: bold; color: #7f8c8d; text-transform: uppercase; }
         .stat-value { display: block; font-size: 16px; font-weight: bold; margin-top: 5px; }
 
-        .grid-container {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 15px;
-        }
-
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 15px; }
         .box {
             background: var(--white); padding: 20px 10px; text-align: center;
             border-radius: 15px; text-decoration: none; color: var(--dark);
@@ -76,29 +79,36 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: 0.3s;
             border: 1px solid transparent; cursor: pointer;
         }
-
         .box:hover { transform: translateY(-3px); border-color: var(--primary); color: var(--primary); }
         .box i { font-size: 22px; }
         .box span { font-size: 11px; font-weight: bold; text-transform: uppercase; }
 
-        /* Report Modal Styles */
         #reportModal {
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
             z-index: 2000; align-items: center; justify-content: center; padding: 20px;
         }
         .modal-content { background: white; padding: 20px; border-radius: 15px; width: 100%; max-width: 350px; }
         .modal-content select, .modal-content input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }
-        .submit-btn { width: 100%; background: var(--secondary); color: white; padding: 10px; border: none; border-radius: 8px; font-weight: bold; }
-
+        .submit-btn { width: 100%; background: var(--secondary); color: white; padding: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .footer-info { font-size: 11px; color: #aaa; margin-top: 30px; padding: 20px; text-align: center; }
     </style>
 </head>
 <body>
 
-    <div class="top-bar">
-        <a href="#" class="login-btn" onclick="openLogin()">
-            <i class="fas fa-sign-in-alt"></i> Login
-        </a>
+    <div id="loginOverlay">
+        <div class="login-box">
+            <i class="fas fa-user-shield" style="font-size: 40px; color: var(--primary); margin-bottom: 15px;"></i>
+            <h2>Verify Account</h2>
+            <p style="font-size: 12px; color: #666;">Enter your registered mobile number</p>
+            <input type="tel" id="loginPhone" placeholder="Mobile Number" style="width:100%; padding:12px; margin:15px 0; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;">
+            <button onclick="handleLogin()" class="submit-btn">LOGIN NOW</button>
+        </div>
+    </div>
+
+    <div class="top-bar" id="navBar" style="display:none;">
+        <button class="logout-btn" onclick="location.reload()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
         <button class="mode-btn" onclick="toggleView()">
             <i class="fas fa-desktop"></i> <span id="viewModeText">Desktop Mode</span>
         </button>
@@ -107,6 +117,7 @@
     <div class="phone-frame" id="mainFrame">
         <header>
             <h1>Business Dashboard</h1>
+            <p id="welcomeUser" style="font-size: 12px; color: var(--secondary);"></p>
         </header>
 
         <div class="stats-grid">
@@ -151,20 +162,47 @@
     <div id="reportModal">
         <div class="modal-content">
             <h3 style="margin-top:0">Submit Report</h3>
-            <label style="font-size:12px">Select Issue (Bengali):</label>
             <select id="reportIssue">
                 <option value="Takar hisab vul acha">টাকার হিসাব ভুল আছে</option>
                 <option value="Maler dam beshi dhora ache">মালের দাম বেশি ধরা আছে</option>
-                <option value="Maler mollo kom dhorechen">মালের মূল্য কম ধরেছেন</option>
-                <option value="Payment baki ache">আমার একটা পেমেন্ট এখনো যুক্ত করতে বাকি আছে</option>
+                <option value="Payment baki ache">পেমেন্ট যুক্ত করতে বাকি</option>
             </select>
-            <input type="text" id="userMobile" placeholder="Your Registered Mobile Number">
-            <button class="submit-btn" onclick="submitReport()">OK ENTER</button>
-            <button onclick="closeReport()" style="width:100%; background:none; border:none; color:gray; margin-top:10px; font-size:12px">Cancel</button>
+            <input type="text" id="userMobile" placeholder="Verify Mobile Number">
+            <button class="submit-btn" onclick="submitReport()">SUBMIT</button>
+            <button onclick="closeReport()" style="width:100%; background:none; border:none; color:gray; margin-top:10px; cursor:pointer;">Cancel</button>
         </div>
     </div>
 
     <script>
+        // --- LOGIN LOGIC ---
+        async function handleLogin() {
+            const phone = document.getElementById('loginPhone').value;
+            if(!phone) { alert("Please enter mobile number"); return; }
+
+            try {
+                // 'account' টেবিল থেকে মোবাইল নম্বর চেক করা হচ্ছে
+                const { data, error } = await supabaseClient
+                    .from('account')
+                    .select('*')
+                    .eq('mobile', phone) // নিশ্চিত করুন আপনার কলামের নাম 'mobile'
+                    .single();
+
+                if (error || !data) {
+                    alert("Account not found! Please contact admin.");
+                } else {
+                    // Success Login
+                    document.getElementById('loginOverlay').style.display = 'none';
+                    document.getElementById('mainFrame').style.display = 'block';
+                    document.getElementById('navBar').style.display = 'flex';
+                    document.getElementById('welcomeUser').innerText = "Welcome back: " + phone;
+                    fetchLiveData(); // লোড ডাটা
+                }
+            } catch (err) {
+                alert("Connection Error: " + err.message);
+            }
+        }
+
+        // --- DASHBOARD FUNCTIONS ---
         function toggleView() {
             const frame = document.getElementById('mainFrame');
             const btnText = document.getElementById('viewModeText');
@@ -174,33 +212,6 @@
 
         function openReport() { document.getElementById('reportModal').style.display = 'flex'; }
         function closeReport() { document.getElementById('reportModal').style.display = 'none'; }
-
-        function openLogin() {
-            let num = prompt("Enter your registered mobile number to login:");
-            if(num) alert("Attempting login for: " + num);
-            // Ekhane apnar admin account verification logic add kora jabe
-        }
-
-        async function submitReport() {
-            const issue = document.getElementById('reportIssue').value;
-            const mobile = document.getElementById('userMobile').value;
-
-            if(!mobile) { alert("Please enter mobile number"); return; }
-
-            try {
-                if (typeof supabaseClient !== 'undefined') {
-                    const { error } = await supabaseClient
-                        .from('reports') // Make sure this table exists in your Supabase
-                        .insert([{ mobile_number: mobile, issue: issue, status: 'pending' }]);
-                    
-                    if(error) throw error;
-                    alert("Report submitted successfully! Admin will check.");
-                    closeReport();
-                }
-            } catch (err) {
-                alert("Error: " + err.message);
-            }
-        }
 
         async function fetchLiveData() {
             try {
@@ -231,11 +242,22 @@
             }
         }
 
+        async function submitReport() {
+            const issue = document.getElementById('reportIssue').value;
+            const mobile = document.getElementById('userMobile').value;
+            if(!mobile) { alert("Enter mobile"); return; }
+
+            const { error } = await supabaseClient
+                .from('reports')
+                .insert([{ mobile_number: mobile, issue: issue, status: 'pending' }]);
+
+            if(error) alert("Error: " + error.message);
+            else { alert("Report Sent!"); closeReport(); }
+        }
+
         function formatINR(val) {
             return "₹ " + parseFloat(val).toLocaleString('en-IN', { minimumFractionDigits: 2 });
         }
-
-        window.onload = fetchLiveData;
     </script>
 </body>
 </html>
