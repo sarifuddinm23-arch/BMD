@@ -6,6 +6,8 @@
     <title>BMD - Business Manager</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
@@ -20,269 +22,219 @@
             align-items: center; color: #333; transition: 0.3s;
         }
 
-        /* Login Overlay */
-        #loginOverlay {
-            position: fixed; inset: 0; background: var(--dark); 
-            z-index: 9999; display: flex; justify-content: center; align-items: center;
+        /* User Profile Section */
+        .user-profile {
+            background: white; width: 90%; max-width: 400px; padding: 15px;
+            border-radius: 15px; margin-top: 15px; display: flex; align-items: center; gap: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
-
-        .login-box {
-            background: white; padding: 30px; border-radius: 15px; 
-            text-align: center; width: 85%; max-width: 350px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
+        .user-avatar { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
+        .user-info h4 { margin: 0; font-size: 16px; color: var(--dark); }
+        .user-info p { margin: 2px 0; font-size: 11px; color: #666; }
 
         .top-bar {
             width: 100%; background: var(--dark); padding: 12px 20px;
             display: flex; justify-content: space-between; align-items: center;
-            box-sizing: border-box; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            position: sticky; top: 0; z-index: 1000;
+            box-sizing: border-box; position: sticky; top: 0; z-index: 1000;
         }
 
-        .logout-btn {
-            color: white; text-decoration: none; background: var(--danger); 
-            padding: 5px 15px; border-radius: 20px; font-size: 13px; border: none; cursor: pointer;
-        }
-
-        .mode-btn {
-            background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3);
-            padding: 6px 15px; border-radius: 20px; cursor: pointer; font-size: 13px;
-            display: flex; align-items: center; gap: 8px;
-        }
-
-        .phone-frame {
-            width: 95%; max-width: 420px; min-height: 90vh;
-            margin-top: 20px; transition: all 0.4s ease; display: none; /* Hidden until login */
-        }
-
+        .phone-frame { width: 95%; max-width: 420px; margin-top: 10px; }
         .desktop-mode { max-width: 1000px !important; }
 
-        header { text-align: center; padding: 20px 0; }
-        header h1 { font-size: 22px; text-transform: uppercase; color: var(--dark); margin: 0; }
-
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 10px; }
-        .stat-card {
-            background: var(--white); padding: 15px; border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-bottom: 4px solid #ddd;
-        }
+        /* Stats Cards - Bengali Text */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
+        .stat-card { background: white; padding: 12px; border-radius: 10px; border-left: 5px solid #ddd; }
         .stat-card.received { border-color: var(--success); }
         .stat-card.payment { border-color: var(--danger); }
-        .stat-card.balance { border-color: var(--primary); }
-        .stat-card.due { border-color: #9b59b6; }
-        .stat-label { font-size: 10px; font-weight: bold; color: #7f8c8d; text-transform: uppercase; }
-        .stat-value { display: block; font-size: 16px; font-weight: bold; margin-top: 5px; }
+        .stat-label { font-size: 12px; font-weight: bold; color: #555; }
+        .stat-value { display: block; font-size: 15px; font-weight: bold; margin-top: 5px; }
 
-        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 15px; }
-        .box {
-            background: var(--white); padding: 20px 10px; text-align: center;
-            border-radius: 15px; text-decoration: none; color: var(--dark);
-            display: flex; flex-direction: column; gap: 8px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: 0.3s;
-            border: 1px solid transparent; cursor: pointer;
-        }
-        .box:hover { transform: translateY(-3px); border-color: var(--primary); color: var(--primary); }
-        .box i { font-size: 22px; }
-        .box span { font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        /* Statement Section */
+        .download-sec { background: white; margin: 10px; padding: 15px; border-radius: 12px; text-align: center; }
+        .date-input { padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 12px; }
+        .btn-download { background: var(--secondary); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-top: 10px; width: 100%; font-weight: bold; }
 
-        #reportModal {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-            z-index: 2000; align-items: center; justify-content: center; padding: 20px;
-        }
-        .modal-content { background: white; padding: 20px; border-radius: 15px; width: 100%; max-width: 350px; }
-        .modal-content select, .modal-content input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }
-        .submit-btn { width: 100%; background: var(--secondary); color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .footer-info { font-size: 11px; color: #aaa; margin-top: 30px; padding: 20px; text-align: center; }
+        /* Product List View */
+        .product-list { padding: 10px; }
+        .product-item { background: white; padding: 12px; border-radius: 10px; margin-bottom: 10px; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .product-item h5 { margin: 0 0 5px 0; color: var(--secondary); border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .prod-detail { display: grid; grid-template-columns: 1fr 1fr; font-size: 12px; gap: 5px; }
+        .print-btn-sm { position: absolute; top: 10px; right: 10px; background: var(--success); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; }
+
+        #loginOverlay { position: fixed; inset: 0; background: var(--dark); z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .login-box { background: white; padding: 30px; border-radius: 15px; text-align: center; width: 85%; max-width: 350px; }
+        
+        @media print { .top-bar, .user-profile, .download-sec, .stats-grid { display: none !important; } }
     </style>
 </head>
 <body>
 
     <div id="loginOverlay">
         <div class="login-box">
-            <i class="fas fa-user-shield" style="font-size: 40px; color: var(--primary); margin-bottom: 15px;"></i>
-            <h2 style="margin: 10px 0;">Verify Account</h2>
-            <p style="font-size: 12px; color: #666; margin-bottom: 20px;">Enter your registered mobile number</p>
-            <input type="tel" id="loginPhone" placeholder="Mobile Number" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box; font-size: 16px;">
-            <button onclick="handleLogin()" id="loginBtn" class="submit-btn">LOGIN NOW</button>
-            <p id="errorMsg" style="color: red; font-size: 12px; margin-top: 10px; display: none;"></p>
+            <h2 style="margin:0 0 15px 0;">Verification</h2>
+            <input type="tel" id="loginPhone" placeholder="Mobile Number" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;">
+            <button onclick="handleLogin()" style="width:100%; background:var(--primary); color:white; border:none; padding:12px; margin-top:15px; border-radius:8px; font-weight:bold; cursor:pointer;">LOGIN</button>
+            <p id="errorMsg" style="color:red; font-size:12px; display:none; margin-top:10px;"></p>
         </div>
     </div>
 
     <div class="top-bar" id="navBar" style="display:none;">
-        <button class="logout-btn" onclick="location.reload()">
-            <i class="fas fa-sign-out-alt"></i> Logout
-        </button>
-        <button class="mode-btn" onclick="toggleView()">
-            <i class="fas fa-desktop"></i> <span id="viewModeText">Desktop Mode</span>
-        </button>
+        <button onclick="location.reload()" style="background:var(--danger); color:white; border:none; padding:5px 12px; border-radius:15px; cursor:pointer;">Logout</button>
+        <button onclick="toggleView()" style="background:rgba(255,255,255,0.1); color:white; border:1px solid grey; padding:5px 12px; border-radius:15px; cursor:pointer;">Desktop View</button>
     </div>
 
-    <div class="phone-frame" id="mainFrame">
-        <header>
-            <h1>Business Dashboard</h1>
-            <p id="welcomeUser" style="font-size: 14px; color: var(--secondary); font-weight: bold;"></p>
-        </header>
+    <div class="phone-frame" id="mainFrame" style="display:none;">
+        
+        <div class="user-profile">
+            <img src="https://via.placeholder.com/60" id="userImg" class="user-avatar">
+            <div class="user-info">
+                <h4 id="userName">Full Name</h4>
+                <p id="userAddr">Address, Pin, State</p>
+                <p id="userMob">Mobile: 0000000000</p>
+            </div>
+        </div>
+
+        <header><h1>Business Dashboard</h1></header>
 
         <div class="stats-grid">
-            <div class="stat-card received">
-                <span class="stat-label">Total Received</span>
-                <span class="stat-value" id="totalReceived">₹ 0.00</span>
-            </div>
-            <div class="stat-card payment">
-                <span class="stat-label">Total Paid</span>
-                <span class="stat-value" id="totalPayment">₹ 0.00</span>
-            </div>
-            <div class="stat-card balance">
-                <span class="stat-label">Net Cash</span>
-                <span class="stat-value" id="totalPrice">₹ 0.00</span>
-            </div>
-            <div class="stat-card due">
-                <span class="stat-label">Total Due</span>
-                <span class="stat-value" id="paymentStatus" style="color: var(--danger);">₹ 0.00</span>
-            </div>
+            <div class="stat-card received"><span class="stat-label">মোট জমা (Total Received)</span><span class="stat-value" id="totalReceived">₹ 0.00</span></div>
+            <div class="stat-card payment"><span class="stat-label">মোট খরচ (Total Paid)</span><span class="stat-value" id="totalPayment">₹ 0.00</span></div>
+            <div class="stat-card balance"><span class="stat-label">নিট ক্যাশ (Net Cash)</span><span class="stat-value" id="totalPrice">₹ 0.00</span></div>
+            <div class="stat-card due"><span class="stat-label">মোট বাকি (Total Due)</span><span class="stat-value" id="paymentStatus">₹ 0.00</span></div>
         </div>
 
-        <div class="grid-container">
-            <a href="myprofile.html" class="box">
-                <i class="fas fa-cog" style="color: #7f8c8d;"></i>
-                <span>Settings</span>
-            </a>
-            <a href="linkhire.html" class="box">
-                <i class="fas fa-print" style="color: #27ae60;"></i>
-                <span>Print Bills</span>
-            </a>
-            <div class="box" onclick="openReport()">
-                <i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i>
-                <span>Report Problem</span>
+        <div class="download-sec">
+            <h4 style="margin:0 0 10px 0;">Statement Download</h4>
+            <div style="display:flex; gap:5px; justify-content:center;">
+                <input type="date" id="startDate" class="date-input">
+                <input type="date" id="endDate" class="date-input">
             </div>
+            <button class="btn-download" onclick="downloadStatement()"><i class="fas fa-file-pdf"></i> Download Statement</button>
         </div>
 
-        <div class="footer-info">
-            System Status: Online | Currency: INR (₹)
-        </div>
-    </div>
+        <div class="product-list" id="productContainer">
+            </div>
 
-    <div id="reportModal">
-        <div class="modal-content">
-            <h3 style="margin-top:0">Submit Report</h3>
-            <select id="reportIssue">
-                <option value="Takar hisab vul acha">টাকার হিসাব ভুল আছে</option>
-                <option value="Maler dam beshi dhora ache">মালের দাম বেশি ধরা আছে</option>
-                <option value="Payment baki ache">পেমেন্ট যুক্ত করতে বাকি</option>
-            </select>
-            <input type="text" id="userMobile" placeholder="Verify Mobile Number">
-            <button class="submit-btn" onclick="submitReport()">SUBMIT</button>
-            <button onclick="closeReport()" style="width:100%; background:none; border:none; color:gray; margin-top:10px; cursor:pointer;">Cancel</button>
-        </div>
     </div>
 
     <script>
-        // --- LOGIN LOGIC ---
+        let currentUser = null;
+
         async function handleLogin() {
             const phone = document.getElementById('loginPhone').value.trim();
-            const errorMsg = document.getElementById('errorMsg');
-            const loginBtn = document.getElementById('loginBtn');
+            if(!phone) return;
 
-            if(!phone) { 
-                showError("Please enter mobile number"); 
-                return; 
-            }
+            const { data, error } = await supabaseClient.from('accounts').select('*').eq('mobile', phone);
+            
+            if (data && data.length > 0) {
+                currentUser = data[0];
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('mainFrame').style.display = 'block';
+                document.getElementById('navBar').style.display = 'flex';
+                
+                // Set Profile Data
+                document.getElementById('userName').innerText = currentUser.name || "User Name";
+                document.getElementById('userAddr').innerText = `${currentUser.address || ''}, ${currentUser.pin || ''}, ${currentUser.state || ''}`;
+                document.getElementById('userMob').innerText = "Mobile: " + currentUser.mobile;
+                if(currentUser.image_url) document.getElementById('userImg').src = currentUser.image_url;
 
-            try {
-                loginBtn.innerText = "Verifying...";
-                loginBtn.disabled = true;
-                errorMsg.style.display = 'none';
-
-                // আপনার টেবিলের নাম 'accounts' ব্যবহার করা হয়েছে
-                const { data, error } = await supabaseClient
-                    .from('accounts') 
-                    .select('*')
-                    .eq('mobile', phone);
-
-                if (error) throw error;
-
-                if (!data || data.length === 0) {
-                    showError("Account not found! Please contact admin.");
-                    loginBtn.innerText = "LOGIN NOW";
-                    loginBtn.disabled = false;
-                } else {
-                    // Success Login
-                    const user = data[0];
-                    document.getElementById('loginOverlay').style.display = 'none';
-                    document.getElementById('mainFrame').style.display = 'block';
-                    document.getElementById('navBar').style.display = 'flex';
-                    document.getElementById('welcomeUser').innerText = "User: " + (user.name || phone);
-                    fetchLiveData(); 
-                }
-            } catch (err) {
-                showError("Connection Error: " + err.message);
-                loginBtn.innerText = "LOGIN NOW";
-                loginBtn.disabled = false;
+                fetchDashboardData();
+            } else {
+                document.getElementById('errorMsg').innerText = "Account not found!";
+                document.getElementById('errorMsg').style.display = 'block';
             }
         }
 
-        function showError(msg) {
-            const errorMsg = document.getElementById('errorMsg');
-            errorMsg.innerText = msg;
-            errorMsg.style.display = 'block';
+        async function fetchDashboardData() {
+            const { data: trans } = await supabaseClient.from('transactions').select('*').order('created_at', { ascending: false });
+            const { data: pays } = await supabaseClient.from('payments').select('*');
+
+            let cashIn = 0, cashOut = 0, totalDue = 0;
+            let html = '';
+
+            trans.forEach((item, index) => {
+                cashIn += parseFloat(item.paid_amount || 0);
+                totalDue += parseFloat(item.due_amount || 0);
+
+                // Live View Product Items
+                html += `
+                <div class="product-item">
+                    <h5>Product Received #${index + 1}</h5>
+                    <button class="print-btn-sm" onclick="printInvoice(${JSON.stringify(item).replace(/"/g, '&quot;')})">Print Bill</button>
+                    <div class="prod-detail">
+                        <span>Quantity: <b>${item.quantity || 0}</b></span>
+                        <span>Date: <b>${new Date(item.created_at).toLocaleDateString()}</b></span>
+                        <span>Price: <b>₹${item.total_price || 0}</b></span>
+                        <span>Paid: <b style="color:green;">₹${item.paid_amount || 0}</b></span>
+                        <span style="grid-column: span 2;">Due: <b style="color:red;">₹${item.due_amount || 0}</b></span>
+                    </div>
+                </div>`;
+            });
+
+            document.getElementById('productContainer').innerHTML = html;
+            
+            if(pays) {
+                pays.forEach(p => {
+                    if(p.payment_type === 'took') cashIn += parseFloat(p.amount || 0);
+                    if(p.payment_type === 'gave') cashOut += parseFloat(p.amount || 0);
+                });
+            }
+
+            document.getElementById('totalReceived').innerText = "₹ " + cashIn.toLocaleString('en-IN');
+            document.getElementById('totalPayment').innerText = "₹ " + cashOut.toLocaleString('en-IN');
+            document.getElementById('totalPrice').innerText = "₹ " + (cashIn - cashOut).toLocaleString('en-IN');
+            document.getElementById('paymentStatus').innerText = "₹ " + (totalDue - cashOut).toLocaleString('en-IN');
         }
 
-        // --- DASHBOARD FUNCTIONS ---
+        // A4 Print Invoice Logic
+        function printInvoice(item) {
+            const printWin = window.open('', '_blank');
+            printWin.document.write(`
+                <html>
+                <head><title>Invoice</title></head>
+                <body style="font-family: sans-serif; padding: 40px; line-height: 1.6;">
+                    <h1 style="text-align:center; text-transform:uppercase;">INVOICE</h1>
+                    <hr>
+                    <div style="display:flex; justify-content:space-between; margin-top:20px;">
+                        <div>
+                            <h3>Seller Details:</h3>
+                            <p>${currentUser.name}<br>${currentUser.address}<br>${currentUser.state}, ${currentUser.pin}<br>Mobile: ${currentUser.mobile}</p>
+                        </div>
+                        <div style="text-align:right;">
+                            <p>Date: ${new Date().toLocaleDateString()}<br>Invoice No: BMD-${Date.now()}</p>
+                        </div>
+                    </div>
+                    <table border="1" style="width:100%; border-collapse:collapse; margin-top:30px; text-align:center;">
+                        <tr style="background:#eee;">
+                            <th>Description</th><th>Quantity</th><th>Total Price</th><th>Paid</th><th>Due</th>
+                        </tr>
+                        <tr>
+                            <td style="padding:10px;">Product Received</td>
+                            <td>${item.quantity}</td>
+                            <td>₹${item.total_price}</td>
+                            <td>₹${item.paid_amount}</td>
+                            <td>₹${item.due_amount}</td>
+                        </tr>
+                    </table>
+                    <div style="margin-top:100px; display:flex; justify-content:space-between;">
+                        <div style="border-top: 1px solid black; width: 200px; text-align:center;"><p>Business Supplier Signature</p></div>
+                        <div style="border-top: 1px solid black; width: 200px; text-align:center;"><p>Seller/Wholesaler Signature</p></div>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWin.document.close();
+            printWin.print();
+        }
+
         function toggleView() {
-            const frame = document.getElementById('mainFrame');
-            const btnText = document.getElementById('viewModeText');
-            frame.classList.toggle('desktop-mode');
-            btnText.innerText = frame.classList.contains('desktop-mode') ? "Mobile Mode" : "Desktop Mode";
+            document.getElementById('mainFrame').classList.toggle('desktop-mode');
         }
 
-        function openReport() { document.getElementById('reportModal').style.display = 'flex'; }
-        function closeReport() { document.getElementById('reportModal').style.display = 'none'; }
-
-        async function fetchLiveData() {
-            try {
-                if (typeof supabaseClient !== 'undefined') {
-                    const { data: trans, error: e1 } = await supabaseClient.from('transactions').select('*');
-                    const { data: pays, error: e2 } = await supabaseClient.from('payments').select('*');
-
-                    if (e1 || e2) throw e1 || e2;
-
-                    let cashIn = 0, cashOut = 0, totalDue = 0;
-                    if(trans) {
-                        trans.forEach(item => {
-                            cashIn += parseFloat(item.paid_amount || 0);
-                            totalDue += parseFloat(item.due_amount || 0);
-                        });
-                    }
-                    if(pays) {
-                        pays.forEach(p => {
-                            if(p.payment_type === 'took') cashIn += parseFloat(p.amount || 0);
-                            if(p.payment_type === 'gave') cashOut += parseFloat(p.amount || 0);
-                        });
-                    }
-                    document.getElementById('totalReceived').innerText = formatINR(cashIn);
-                    document.getElementById('totalPayment').innerText = formatINR(cashOut);
-                    document.getElementById('totalPrice').innerText = formatINR(cashIn - cashOut);
-                    document.getElementById('paymentStatus').innerText = formatINR(totalDue - cashOut);
-                }
-            } catch (err) {
-                console.error("Dashboard Error:", err.message);
-            }
-        }
-
-        async function submitReport() {
-            const issue = document.getElementById('reportIssue').value;
-            const mobile = document.getElementById('userMobile').value;
-            if(!mobile) { alert("Enter mobile"); return; }
-
-            const { error } = await supabaseClient
-                .from('reports')
-                .insert([{ mobile_number: mobile, issue: issue, status: 'pending' }]);
-
-            if(error) alert("Error: " + error.message);
-            else { alert("Report Sent!"); closeReport(); }
-        }
-
-        function formatINR(val) {
-            return "₹ " + parseFloat(val).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        // PDF Statement Logic (Placeholder)
+        function downloadStatement() {
+            alert("Generating PDF for period: " + document.getElementById('startDate').value + " to " + document.getElementById('endDate').value);
+            // jsPDF implementation can be added here
         }
     </script>
 </body>
