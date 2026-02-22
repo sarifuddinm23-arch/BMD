@@ -23,7 +23,6 @@
         
         .add-btn { background: var(--primary); color: white; border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(243, 156, 18, 0.3); }
 
-        /* Data List Styling */
         .data-list { list-style: none; padding: 0; margin: 0; }
         .data-item { background: #fdfdfd; padding: 12px 15px; border: 1px solid #f1f1f1; border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
         .data-item:hover { border-color: var(--primary); background: #fff; }
@@ -36,7 +35,6 @@
         .fa-trash { color: #e74c3c; }
         .actions i:hover { transform: scale(1.2); }
 
-        /* Form Overlay */
         .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
         .form-box { background: white; width: 100%; max-width: 350px; padding: 25px; border-radius: 20px; position: relative; }
         .form-box h2 { margin-top: 0; font-size: 20px; margin-bottom: 20px; }
@@ -76,12 +74,12 @@
         
         <div class="input-group">
             <label>Mother Category Name</label>
-            <input type="text" id="catName" placeholder="e.g. Mobile, Oil, Electronics">
+            <input type="text" id="catName" placeholder="e.g. Mobile, Oil">
         </div>
         
         <div class="input-group">
             <label>Sub Category Name</label>
-            <input type="text" id="subName" placeholder="e.g. Samsung, Mustard, Hardware">
+            <input type="text" id="subName" placeholder="e.g. Samsung, Mustard">
         </div>
         
         <button class="save-btn" onclick="saveData()" id="saveBtn">SAVE DATA</button>
@@ -92,6 +90,7 @@
     let isEdit = false;
 
     function toggleView() { document.getElementById('mainWrapper').classList.toggle('desktop-mode'); }
+    
     function openForm() { 
         isEdit = false;
         document.getElementById('formTitle').innerText = "Add New Entry";
@@ -100,10 +99,12 @@
         document.getElementById('subName').value = "";
         document.getElementById('formOverlay').style.display = 'flex'; 
     }
+    
     function closeForm() { document.getElementById('formOverlay').style.display = 'none'; }
 
+    // ক্যাটাগরি লোড করার ফাংশন (টেবিল নাম 'master_data' এ আপডেট করা হয়েছে)
     async function loadCategories() {
-        const { data, error } = await supabaseClient.from('mother_categories').select('*').order('created_at', { ascending: false });
+        const { data, error } = await supabaseClient.from('master_data').select('*').order('created_at', { ascending: false });
         const list = document.getElementById('categoryList');
         list.innerHTML = '';
 
@@ -112,36 +113,43 @@
                 list.innerHTML += `
                     <div class="data-item">
                         <div class="info">
-                            <span>Mother: ${item.name}</span>
-                            <b>Sub: ${item.sub_name || 'N/A'}</b>
+                            <span>Category: ${item.category_name}</span>
+                            <b>Sub: ${item.sub_category_name || 'N/A'}</b>
                         </div>
                         <div class="actions">
-                            <i class="fas fa-edit" onclick="editEntry('${item.id}', '${item.name}', '${item.sub_name}')"></i>
+                            <i class="fas fa-edit" onclick="editEntry('${item.id}', '${item.category_name}', '${item.sub_category_name}')"></i>
                             <i class="fas fa-trash" onclick="deleteEntry('${item.id}')"></i>
                         </div>
                     </div>`;
             });
         } else {
-            list.innerHTML = '<p style="text-align:center; color:#ccc;">No data found</p>';
+            list.innerHTML = '<p style="text-align:center; color:#ccc; padding: 20px;">No data found</p>';
         }
     }
 
+    // ডাটা সেভ করার ফাংশন
     async function saveData() {
-        const name = document.getElementById('catName').value;
-        const sub_name = document.getElementById('subName').value;
+        const catName = document.getElementById('catName').value;
+        const subName = document.getElementById('subName').value;
         const id = document.getElementById('editId').value;
         const btn = document.getElementById('saveBtn');
 
-        if (!name || !sub_name) return alert("Please fill both boxes!");
+        if (!catName || !subName) return alert("Please fill both boxes!");
 
         btn.disabled = true;
         btn.innerText = "Saving...";
 
         let response;
         if (isEdit) {
-            response = await supabaseClient.from('mother_categories').update({ name, sub_name }).eq('id', id);
+            response = await supabaseClient.from('master_data').update({ 
+                category_name: catName, 
+                sub_category_name: subName 
+            }).eq('id', id);
         } else {
-            response = await supabaseClient.from('mother_categories').insert([{ name, sub_name }]);
+            response = await supabaseClient.from('master_data').insert([{ 
+                category_name: catName, 
+                sub_category_name: subName 
+            }]);
         }
 
         if (response.error) {
@@ -164,8 +172,8 @@
     }
 
     async function deleteEntry(id) {
-        if (confirm("Are you sure to delete this category?")) {
-            const { error } = await supabaseClient.from('mother_categories').delete().eq('id', id);
+        if (confirm("Are you sure to delete this?")) {
+            const { error } = await supabaseClient.from('master_data').delete().eq('id', id);
             if (error) alert(error.message);
             else loadCategories();
         }
