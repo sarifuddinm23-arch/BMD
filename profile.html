@@ -14,183 +14,231 @@
         .top-bar { background: var(--dark); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; z-index: 1000; }
         .mode-btn { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 12px; }
 
-        .container { width: 95%; max-width: 450px; margin: 15px auto; transition: 0.4s; }
+        /* User Header Info */
+        .user-header-card { background: var(--white); padding: 15px; border-radius: 0 0 15px 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .user-header-card h2 { margin: 0; font-size: 18px; color: var(--dark); }
+        .user-header-card p { margin: 3px 0; font-size: 12px; color: #666; }
+
+        .container { width: 95%; max-width: 450px; margin: 0 auto 15px; transition: 0.4s; }
         .desktop-view { max-width: 1000px !important; }
 
-        /* Live Summary Card */
-        .live-card { background: var(--dark); color: white; border-radius: 15px; padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .live-item small { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
-        .live-item span { display: block; font-size: 18px; font-weight: bold; margin-top: 5px; }
-
         /* Action Grid */
-        .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-        .action-btn { background: var(--white); padding: 15px 5px; border-radius: 12px; text-align: center; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05); font-size: 10px; font-weight: bold; transition: 0.2s; border: none; }
-        .action-btn i { display: block; font-size: 20px; margin-bottom: 8px; }
-        .action-btn.receive i { color: #2980b9; }
-        .action-btn.sell i { color: #e67e22; }
-        .action-btn.pay-in i { color: var(--success); }
-        .action-btn.pay-out i { color: var(--danger); }
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
+        .action-card { background: var(--white); padding: 20px; border-radius: 15px; text-align: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .action-card i { font-size: 30px; margin-bottom: 10px; display: block; }
+        .action-card.prod i { color: var(--primary); }
+        .action-card.pay i { color: var(--success); }
 
-        /* Modal / Pop-up Windows */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; }
-        .modal-content { background: white; width: 90%; max-width: 400px; padding: 20px; border-radius: 15px; position: relative; }
-        .close-modal { position: absolute; right: 15px; top: 15px; font-size: 20px; cursor: pointer; }
+        /* Modals */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center; overflow-y: auto; }
+        .modal-content { background: white; width: 90%; max-width: 420px; padding: 25px; border-radius: 15px; position: relative; max-height: 90vh; overflow-y: auto; }
+        .close-modal { position: absolute; right: 15px; top: 15px; font-size: 22px; cursor: pointer; color: #999; }
         
-        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        .btn-submit { width: 100%; padding: 15px; background: var(--dark); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+        .flex-group { display: flex; gap: 10px; }
+        .check-group { display: flex; align-items: center; gap: 10px; background: #f9f9f9; padding: 10px; border-radius: 8px; margin: 5px 0; }
+        .check-group input { width: auto; margin: 0; }
 
-        /* Statement Table */
-        .statement-card { background: var(--white); border-radius: 15px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th { background: #f8f9fa; padding: 12px; text-align: left; }
-        td { padding: 12px; border-bottom: 1px solid #f1f1f1; }
-        .invoice-btn { color: var(--primary); cursor: pointer; font-size: 16px; }
+        .summary-mini { background: #f0f4f8; padding: 12px; border-radius: 10px; margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; }
+        .summary-mini div b { display: block; font-size: 14px; color: var(--dark); }
 
-        @media print { .top-bar, .action-grid, .mode-btn { display: none; } }
+        .btn-save { width: 100%; padding: 15px; background: var(--dark); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 16px; }
+        .btn-save:hover { background: #333; }
+
+        #multiPaymentLine { display: none; padding: 10px; border: 1px dashed var(--success); border-radius: 8px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <div onclick="history.back()"><i class="fas fa-arrow-left"></i> <span id="userNameHeader">Account</span></div>
+    <div onclick="history.back()" style="cursor:pointer;"><i class="fas fa-arrow-left"></i> <span id="navName">Back</span></div>
     <button class="mode-btn" onclick="toggleMode()"><i class="fas fa-desktop"></i> Mode</button>
+</div>
+
+<div class="user-header-card container" id="userCard">
+    <h2 id="topName">Loading...</h2>
+    <p id="topMobile"><i class="fas fa-phone"></i> --</p>
+    <p id="topAddress"><i class="fas fa-map-marker-alt"></i> --</p>
+    <p id="topArea"><i class="fas fa-location-arrow"></i> --</p>
 </div>
 
 <div class="container" id="mainWrapper">
     
-    <div class="live-card">
-        <div class="live-item">
-            <small>Stock Received</small>
-            <span id="liveReceived">0 Units</span>
-        </div>
-        <div class="live-item">
-            <small>Total Sold</small>
-            <span id="liveSold">0 Units</span>
-        </div>
-        <div class="live-item">
-            <small>Total Paid In</small>
-            <span id="livePayIn">₹ 0</span>
-        </div>
-        <div class="live-item">
-            <small>Total Paid Out</small>
-            <span id="livePayOut">₹ 0</span>
-        </div>
-    </div>
-
     <div class="action-grid">
-        <button class="action-btn receive" onclick="openModal('receiveModal')"><i class="fas fa-truck-loading"></i> RECEIVE</button>
-        <button class="action-btn sell" onclick="openModal('sellModal')"><i class="fas fa-shopping-cart"></i> SELL</button>
-        <button class="action-btn pay-in" onclick="openModal('payInModal')"><i class="fas fa-camera"></i> PAY-IN</button>
-        <button class="action-btn pay-out" onclick="openModal('payOutModal')"><i class="fas fa-wallet"></i> PAY-OUT</button>
+        <div class="action-card prod" onclick="openModal('productModal')">
+            <i class="fas fa-box-open"></i>
+            <b>PRODUCT</b>
+            <small style="display:block; color:#999;">Receive / Sell</small>
+        </div>
+        <div class="action-card pay" onclick="openModal('paymentModal')">
+            <i class="fas fa-hand-holding-usd"></i>
+            <b>PAYMENT</b>
+            <small style="display:block; color:#999;">In / Out</small>
+        </div>
     </div>
 
-    <div class="statement-card">
-        <div style="padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between;">
-            <b><i class="fas fa-file-invoice"></i> ACCOUNT HISTORY</b>
-            <button onclick="window.print()"><i class="fas fa-print"></i></button>
-        </div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Details</th>
-                    <th>Amt/Qty</th>
-                    <th>Inv</th>
-                </tr>
-            </thead>
-            <tbody id="historyBody"></tbody>
-        </table>
-    </div>
+    <h4 style="margin: 20px 0 10px 5px;"><i class="fas fa-history"></i> Recent Transactions</h4>
+    <div id="historyContainer"></div>
 </div>
 
-<div id="receiveModal" class="modal">
+<div id="productModal" class="modal">
     <div class="modal-content">
         <span class="close-modal" onclick="closeModals()">&times;</span>
-        <h3 id="modalTitle">Add Stock</h3>
+        <h3><i class="fas fa-box"></i> Product Entry</h3>
+        
+        <select id="p_action">
+            <option value="received">Receive Product</option>
+            <option value="sell">Sell Product</option>
+        </select>
+
         <input type="text" id="p_name" placeholder="Product Name">
-        <div style="display:flex; gap:10px;">
-            <input type="number" id="qty" placeholder="Quantity" oninput="calculateTotal()">
-            <select id="unit"><option>KG</option><option>Liter</option><option>Pics</option></select>
+        <input type="text" id="p_cat" placeholder="Category (e.g. Food, Oil)">
+
+        <div class="flex-group">
+            <input type="number" id="p_qty" placeholder="Quantity" oninput="calcProduct()">
+            <select id="p_unit">
+                <option value="pics">Pics</option>
+                <option value="liter">Liter</option>
+                <option value="kg">KG</option>
+                <option value="ml">ML</option>
+                <option value="g">G</option>
+            </select>
         </div>
-        <input type="number" id="rate" placeholder="Price Per Unit" oninput="calculateTotal()">
-        <input type="number" id="total" placeholder="Total Price" readonly style="background:#f9f9f9">
-        <button class="btn-submit" onclick="submitStock()">ENTER DATA</button>
+
+        <input type="number" id="p_rate" placeholder="Price per Unit" oninput="calcProduct()">
+        
+        <label style="font-size: 12px; font-weight: bold;">Total Price (Auto):</label>
+        <input type="number" id="p_total" readonly style="background:#eee;">
+
+        <div style="display:flex; gap:15px; margin: 10px 0;">
+            <label><input type="checkbox" id="p_online"> Online</label>
+            <label><input type="checkbox" id="p_cash"> Cash</label>
+        </div>
+
+        <label style="font-size: 12px; font-weight: bold;">Due on this Product:</label>
+        <input type="number" id="p_due" placeholder="Due Amount">
+
+        <button class="btn-save" onclick="saveProduct()">SAVE & ENTER</button>
     </div>
 </div>
 
-<div id="payInModal" class="modal">
+<div id="paymentModal" class="modal">
     <div class="modal-content">
         <span class="close-modal" onclick="closeModals()">&times;</span>
-        <h3>Payment Upload</h3>
-        <input type="number" id="pay_amt" placeholder="Enter Amount">
-        <label style="font-size: 12px; color: #666;">Upload Bank Slip/Screenshot:</label>
-        <input type="file" id="slip" accept="image/*" capture="camera">
-        <button class="btn-submit" onclick="submitPayment()">CONFIRM PAYMENT</button>
+        <h3><i class="fas fa-wallet"></i> Payment Desk</h3>
+        
+        <div class="summary-mini">
+            <div>Total Stock<b id="liveStock">0 Unit</b></div>
+            <div>Cash Paid<b id="liveCash">₹ 0</b></div>
+            <div>Online Paid<b id="liveOnline">₹ 0</b></div>
+            <div>Due Balance<b id="liveDue" style="color:var(--danger);">₹ 0</b></div>
+        </div>
+
+        <select id="pay_action">
+            <option value="received">Payment Received (In)</option>
+            <option value="payout">Payment Payout (Out)</option>
+        </select>
+
+        <div class="check-group">
+            <input type="checkbox" id="type_online" onchange="togglePayInputs()"> Online Payment
+        </div>
+        <div class="check-group">
+            <input type="checkbox" id="type_cash" onchange="togglePayInputs()"> Cash Payment
+        </div>
+
+        <div id="multiPaymentLine">
+            <input type="number" id="pay_online_amt" placeholder="Amount for Online" oninput="calcPayTotal()">
+            <input type="number" id="pay_cash_amt" placeholder="Amount for Cash" oninput="calcPayTotal()">
+        </div>
+
+        <input type="number" id="pay_total" placeholder="Total Payment Amount">
+
+        <button class="btn-save" onclick="savePayment()">SAVE PAYMENT</button>
     </div>
 </div>
 
 <script>
-    let currentType = '';
-    const userId = new URLSearchParams(window.location.search).get('id');
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('id'); // Pass ID in URL like profile.html?id=123
 
     function toggleMode() { document.getElementById('mainWrapper').classList.toggle('desktop-view'); }
-
-    function openModal(id) { 
-        document.getElementById(id).style.display = 'flex'; 
-        currentType = id.includes('receive') ? 'receive' : 'sell';
-        document.getElementById('modalTitle').innerText = currentType.toUpperCase();
-    }
-
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
 
-    function calculateTotal() {
-        const q = document.getElementById('qty').value;
-        const r = document.getElementById('rate').value;
-        document.getElementById('total').value = (q * r) || 0;
+    // --- Product Logic ---
+    function calcProduct() {
+        const q = document.getElementById('p_qty').value || 0;
+        const r = document.getElementById('p_rate').value || 0;
+        const total = q * r;
+        document.getElementById('p_total').value = total;
+        document.getElementById('p_due').value = total; // Initial due is total
     }
 
-    async function submitStock() {
+    // --- Payment Logic ---
+    function togglePayInputs() {
+        const on = document.getElementById('type_online').checked;
+        const ca = document.getElementById('type_cash').checked;
+        const line = document.getElementById('multiPaymentLine');
+        
+        if(on && ca) {
+            line.style.display = 'block';
+        } else {
+            line.style.display = 'none';
+        }
+    }
+
+    function calcPayTotal() {
+        const onAmt = parseFloat(document.getElementById('pay_online_amt').value) || 0;
+        const caAmt = parseFloat(document.getElementById('pay_cash_amt').value) || 0;
+        document.getElementById('pay_total').value = onAmt + caAmt;
+    }
+
+    // --- Load User Data ---
+    async function loadUserData() {
+        const { data, error } = await supabaseClient.from('accounts').select('*').eq('mobile', userId).single();
+        if(data) {
+            document.getElementById('navName').innerText = data.name;
+            document.getElementById('topName').innerText = data.name;
+            document.getElementById('topMobile').innerHTML = `<i class="fas fa-phone"></i> ${data.mobile}`;
+            document.getElementById('topAddress').innerHTML = `<i class="fas fa-map-marker-alt"></i> ${data.address}`;
+            document.getElementById('topArea').innerHTML = `<i class="fas fa-location-arrow"></i> ${data.state}, PIN: ${data.pin}`;
+        }
+    }
+
+    // --- Database Operations ---
+    async function saveProduct() {
         const payload = {
-            party_id: userId,
+            mobile: userId,
+            type: document.getElementById('p_action').value,
             product_name: document.getElementById('p_name').value,
-            qty: document.getElementById('qty').value,
-            unit: document.getElementById('unit').value,
-            rate: document.getElementById('rate').value,
-            net_total: document.getElementById('total').value,
-            mother_category: currentType // receive or sell
+            category: document.getElementById('p_cat').value,
+            qty: document.getElementById('p_qty').value,
+            unit: document.getElementById('p_unit').value,
+            rate: document.getElementById('p_rate').value,
+            total: document.getElementById('p_total').value,
+            due: document.getElementById('p_due').value,
+            created_at: new Date()
         };
-        await supabaseClient.from('transactions').insert([payload]);
-        location.reload();
+        const { error } = await supabaseClient.from('transactions').insert([payload]);
+        if(!error) { alert("Data Saved!"); location.reload(); }
     }
 
-    async function loadHistory() {
-        const { data: trans } = await supabaseClient.from('transactions').select('*').eq('party_id', userId).order('created_at', {ascending: false});
-        let html = '';
-        let rec = 0, sel = 0, pi = 0, po = 0;
-
-        trans.forEach(t => {
-            if(t.mother_category === 'receive') rec += parseFloat(t.qty || 0);
-            if(t.mother_category === 'sell') sel += parseFloat(t.qty || 0);
-            
-            html += `<tr>
-                <td>${new Date(t.created_at).toLocaleDateString()}</td>
-                <td>${t.product_name || 'Payment'}</td>
-                <td>${t.qty || ''} ${t.unit || ''} / ₹${t.net_total || 0}</td>
-                <td><i class="fas fa-file-pdf invoice-btn" onclick="downloadInvoice('${t.id}')"></i></td>
-            </tr>`;
-        });
-
-        document.getElementById('historyBody').innerHTML = html;
-        document.getElementById('liveReceived').innerText = rec + " Units";
-        document.getElementById('liveSold').innerText = sel + " Units";
+    async function savePayment() {
+        const payload = {
+            mobile: userId,
+            action: document.getElementById('pay_action').value,
+            total_amt: document.getElementById('pay_total').value,
+            is_online: document.getElementById('type_online').checked,
+            is_cash: document.getElementById('type_cash').checked,
+            created_at: new Date()
+        };
+        const { error } = await supabaseClient.from('payments').insert([payload]);
+        if(!error) { alert("Payment Recorded!"); location.reload(); }
     }
 
-    function downloadInvoice(id) {
-        alert("Generating Invoice for ID: " + id + "\n Ready for 4x6 Print.");
-    }
-
+    window.onload = loadUserData;
     window.onclick = (e) => { if(e.target.className === 'modal') closeModals(); }
-    window.onload = loadHistory;
 </script>
+
 </body>
 </html>
