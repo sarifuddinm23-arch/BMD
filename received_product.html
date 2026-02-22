@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receive Product Entry</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary: #27ae60; --dark: #0f172a; --bg: #f1f5f9; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding-bottom: 50px; }
+        
+        .top-bar { background: var(--dark); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2);}
+        .mode-btn { background: #334155; border: 1px solid #475569; color: white; padding: 6px 15px; border-radius: 20px; cursor: pointer; font-size: 13px; }
+
+        .container { width: 95%; max-width: 550px; margin: 30px auto; transition: 0.4s; }
+        .desktop-mode { max-width: 1000px !important; }
+
+        .form-card { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+        .form-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        .desktop-mode .form-grid { grid-template-columns: 1fr 1fr; }
+
+        .input-group { display: flex; flex-direction: column; }
+        label { font-size: 13px; font-weight: 700; color: #475569; margin-bottom: 8px; }
+        input, select { padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 15px; outline: none; transition: 0.2s; }
+        input:focus, select:focus { border-color: var(--primary); background: #f0fdf4; box-shadow: 0 0 0 4px rgba(39, 174, 96, 0.1); }
+
+        .total-box { background: #f0fdf4; padding: 20px; border-radius: 16px; margin-top: 20px; border: 2px dashed #bbf7d0; display: flex; justify-content: space-between; align-items: center; }
+        .total-box h2 { margin: 0; color: #166534; font-size: 28px; font-weight: 800; }
+
+        .save-btn { width: 100%; background: #1e293b; color: white; border: none; padding: 18px; border-radius: 14px; font-size: 18px; font-weight: 700; cursor: pointer; margin-top: 25px; transition: 0.3s; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .save-btn:hover { background: #0f172a; transform: translateY(-2px); }
+        
+        kbd { background: #f8fafc; border-radius: 5px; border: 1px solid #cbd5e1; box-shadow: 0 2px 0 #cbd5e1; font-size: 11px; padding: 2px 6px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <div onclick="history.back()" style="cursor:pointer; font-weight:bold;"><i class="fas fa-chevron-left mr-2"></i> RECEIVE ENTRY</div>
+    <button class="mode-btn" onclick="toggleView()"><i class="fas fa-desktop"></i> PC/Mobile View</button>
+</div>
+
+<div class="container" id="mainWrapper">
+    <div class="form-card">
+        <div style="margin-bottom: 25px;">
+            <h2 style="margin:0; color:#0f172a;">Product Inward</h2>
+            <p style="font-size: 13px; color: #64748b;">কিবোর্ড দিয়ে এন্ট্রি করতে <kbd>Tab</kbd> এবং <kbd>Enter</kbd> ব্যবহার করুন।</p>
+        </div>
+        
+        <div class="form-grid">
+            <div class="input-group">
+                <label>Choose Account (কার থেকে কেনা হচ্ছে)</label>
+                <select id="accChoice" autofocus>
+                    <option value="">Select Account/Supplier</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>Mother Category</label>
+                <select id="motherCat" onchange="loadSubCats()">
+                    <option value="">Select Category</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>Sub Category</label>
+                <select id="subCat">
+                    <option value="">Select Sub Category</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>Product Name</label>
+                <input type="text" id="pName" placeholder="পণ্যর নাম লিখুন">
+            </div>
+
+            <div class="input-group">
+                <label>Quantity & Unit</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="qty" placeholder="পরিমাণ" style="flex: 2;" oninput="calculateTotal()">
+                    <select id="unit" style="flex: 1.5;">
+                        <option value="Liter">Liter</option>
+                        <option value="ML">ML</option>
+                        <option value="KG">KG</option>
+                        <option value="Gram">Gram</option>
+                        <option value="Pics">Pics</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Price Per Unit (একক দাম)</label>
+                <input type="number" id="unitPrice" placeholder="0.00" oninput="calculateTotal()">
+            </div>
+
+            <div class="input-group">
+                <label>Payment Paid (কত টাকা দিলেন)</label>
+                <input type="number" id="payAmt" placeholder="0.00">
+            </div>
+        </div>
+
+        <div class="total-box">
+            <span style="color: #166534; font-weight: bold; font-size: 14px;">TOTAL PRODUCT PRICE:</span>
+            <h2 id="totalDisplay">0.00</h2>
+        </div>
+
+        <button class="save-btn" onclick="saveProduct()" id="saveBtn">SAVE & ENTER</button>
+    </div>
+</div>
+
+<script>
+    function toggleView() { document.getElementById('mainWrapper').classList.toggle('desktop-mode'); }
+
+    async function initData() {
+        // ১. অ্যাকাউন্ট লোড করা
+        const { data: accounts } = await supabaseClient.from('accounts').select('account_name');
+        const accSelect = document.getElementById('accChoice');
+        accounts?.forEach(acc => accSelect.innerHTML += `<option value="${acc.account_name}">${acc.account_name}</option>`);
+
+        // ২. ক্যাটাগরি লোড করা
+        const { data: master } = await supabaseClient.from('master_data').select('category_name');
+        const mcSelect = document.getElementById('motherCat');
+        const uniqueCats = [...new Set(master?.map(item => item.category_name))];
+        uniqueCats.forEach(cat => mcSelect.innerHTML += `<option value="${cat}">${cat}</option>`);
+    }
+
+    async function loadSubCats() {
+        const mCat = document.getElementById('motherCat').value;
+        const { data } = await supabaseClient.from('master_data').select('sub_category_name').eq('category_name', mCat);
+        const scSelect = document.getElementById('subCat');
+        scSelect.innerHTML = '<option value="">Select Sub Category</option>';
+        data?.forEach(item => scSelect.innerHTML += `<option value="${item.sub_category_name}">${item.sub_category_name}</option>`);
+    }
+
+    function calculateTotal() {
+        const qty = parseFloat(document.getElementById('qty').value) || 0;
+        const price = parseFloat(document.getElementById('unitPrice').value) || 0;
+        const total = qty * price;
+        document.getElementById('totalDisplay').innerText = total.toFixed(2);
+    }
+
+    async function saveProduct() {
+        const btn = document.getElementById('saveBtn');
+        const data = {
+            supplier_name: document.getElementById('accChoice').value,
+            mother_cat: document.getElementById('motherCat').value,
+            sub_cat: document.getElementById('subCat').value,
+            product_name: document.getElementById('pName').value,
+            quantity: parseFloat(document.getElementById('qty').value),
+            unit: document.getElementById('unit').value,
+            unit_price: parseFloat(document.getElementById('unitPrice').value),
+            total_price: parseFloat(document.getElementById('totalDisplay').innerText),
+            due_amount: parseFloat(document.getElementById('totalDisplay').innerText) - (parseFloat(document.getElementById('payAmt').value) || 0)
+        };
+
+        if(!data.product_name || !data.quantity || !data.supplier_name) return alert("Account, Product and Quantity is required!");
+
+        btn.disabled = true;
+        btn.innerText = "Saving Data...";
+
+        const { error } = await supabaseClient.from('received_products').insert([data]);
+
+        if (error) {
+            alert("Error: " + error.message);
+        } else {
+            alert("Success! Data Saved.");
+            location.reload();
+        }
+        btn.disabled = false;
+    }
+
+    // কিবোর্ড শর্টকাট
+    window.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter' && !btn.disabled) saveProduct();
+    });
+
+    window.onload = initData;
+</script>
+</body>
+</html>
