@@ -33,20 +33,21 @@
         th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #f1f5f9; }
         th { background: #f8fafc; color: #64748b; text-transform: uppercase; }
 
-        /* Icons & Actions */
-        .action-icons { display: flex; gap: 10px; }
-        .action-icons i { cursor: pointer; font-size: 14px; transition: 0.2s; }
-        .fa-print { color: #64748b; }
-        .fa-edit { color: var(--secondary); }
-        .fa-trash { color: var(--danger); }
-        .fa-eye { color: #10b981; }
-
-        /* Full Details Modal */
+        /* Modals */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center; }
-        .modal-content { background: white; width: 90%; max-width: 500px; padding: 20px; border-radius: 20px; position: relative; }
-        .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #ddd; font-size: 14px; }
-        .detail-row b { color: var(--dark); }
-        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 20px; cursor: pointer; }
+        .modal-content { background: white; width: 90%; max-width: 450px; padding: 25px; border-radius: 20px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-content h3 { margin-top: 0; color: var(--dark); border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        
+        /* Form Styling */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 12px; margin-bottom: 5px; font-weight: bold; color: #64748b; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+        input:focus, select:focus { outline: none; border-color: var(--secondary); }
+        
+        .save-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        .save-btn:hover { background: #059669; }
+
+        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #94a3b8; }
 
         @media print { .no-print { display: none; } }
     </style>
@@ -72,7 +73,6 @@
     <a href="received_product.html" class="nav-link"><i class="fas fa-plus-circle"></i><span>Add Rec.</span></a>
     <a href="sell_product.html" class="nav-link"><i class="fas fa-shopping-cart"></i><span>Add Sell</span></a>
     <div class="nav-link" onclick="openPaymentModal()"><i class="fas fa-wallet"></i><span>Payment</span></div>
-    <div class="nav-link" onclick="printStatement()"><i class="fas fa-file-invoice"></i><span>Statement</span></div>
     <div class="nav-link" onclick="location.reload()"><i class="fas fa-sync-alt"></i><span>Refresh</span></div>
 </div>
 
@@ -86,122 +86,162 @@
             <thead>
                 <tr>
                     <th>Date</th>
-                    <th>Product/Mode</th>
+                    <th>Status/Mode</th>
                     <th>Total Amt</th>
                     <th>Paid</th>
-                    <th>Due</th>
+                    <th>Balance</th>
                     <th class="no-print">Action</th>
                 </tr>
             </thead>
-            <tbody id="masterTableBody">
-                </tbody>
+            <tbody id="masterTableBody"></tbody>
         </table>
     </div>
 </div>
 
-<div class="modal" id="detailModal">
+<div class="modal" id="paymentModal">
     <div class="modal-content">
-        <span class="close-modal" onclick="closeModal()">&times;</span>
-        <h3 style="border-bottom: 2px solid var(--secondary); padding-bottom: 10px;">Transaction Details</h3>
-        <div id="detailData"></div>
-        <button onclick="closeModal()" style="width:100%; margin-top:20px; padding:10px; background:var(--dark); color:white; border:none; border-radius:8px;">Close</button>
+        <span class="close-modal" onclick="closeModal('paymentModal')">&times;</span>
+        <h3>Add Payment</h3>
+        <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="pDate">
+        </div>
+        <div class="form-group">
+            <label>Payment Status</label>
+            <select id="pStatus">
+                <option value="Received">Received (আমি পেলাম)</option>
+                <option value="Payout">Payout (আমি দিলাম)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Total Amount</label>
+            <input type="number" id="pAmount" placeholder="0.00">
+        </div>
+        <div class="form-group">
+            <label>Payment Mode</label>
+            <select id="pMode">
+                <option value="Cash">Cash</option>
+                <option value="Online">Online</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>New Due Balance (Auto)</label>
+            <input type="text" id="pNewDue" readonly style="background: #f1f5f9;">
+        </div>
+        <button class="save-btn" id="savePaymentBtn" onclick="savePayment()">SAVE (ENTER)</button>
     </div>
 </div>
 
 <script>
     const urlParams = new URLSearchParams(window.location.search);
     const accName = urlParams.get('name');
-    let accountData = {};
-    let totalValue = 0;
-    let totalPaid = 0;
+    let currentDue = 0;
 
     async function loadAllData() {
         if(!accName) return;
         document.getElementById('accDisplayName').innerText = accName;
 
-        // 1. Get Account Info
+        // 1. Get Accounts
         const { data: acc } = await supabaseClient.from('accounts').select('*').eq('name', accName).single();
-        accountData = acc || {};
-
-        // 2. Get Products
-        const { data: prods } = await supabaseClient.from('received_products').select('*').eq('supplier_name', accName).order('created_at', {ascending: false});
         
-        // 3. Get Payments
+        // 2. Get Products & Payments
+        const { data: prods } = await supabaseClient.from('received_products').select('*').eq('supplier_name', accName).order('created_at', {ascending: false});
         const { data: pays } = await supabaseClient.from('payments').select('*').eq('acc_name', accName).order('payment_date', {ascending: false});
 
         const tbody = document.getElementById('masterTableBody');
         tbody.innerHTML = "";
-        totalValue = 0;
-        totalPaid = 0;
-        let runningDue = 0;
+        let totalVal = 0;
+        let totalPaid = 0;
 
-        // Combine and Sort Data (Simulation of ledger)
+        // Render Products
         prods?.forEach(p => {
-            totalValue += parseFloat(p.total_price || 0);
-            // আমরা ধরে নিচ্ছি p.due_amount বা অন্য কলামে পেইড ডাটা আছে, যদি না থাকে তবে ০
-            let paidAtTime = p.total_price - (p.due_amount || 0); 
-            
+            totalVal += parseFloat(p.total_price || 0);
             tbody.innerHTML += `
                 <tr>
                     <td>${p.created_at.split('T')[0]}</td>
                     <td><b>${p.product_name}</b></td>
                     <td>₹${p.total_price}</td>
-                    <td style="color:green">₹${paidAtTime}</td>
-                    <td style="color:red">₹${p.due_amount || 0}</td>
-                    <td class="action-icons no-print">
-                        <i class="fas fa-eye" onclick='viewDetails(${JSON.stringify(p)})'></i>
-                        <i class="fas fa-print" onclick="window.print()"></i>
-                        <i class="fas fa-edit"></i>
-                        <i class="fas fa-trash"></i>
-                    </td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td class="no-print"><i class="fas fa-eye"></i></td>
                 </tr>`;
         });
 
+        // Render Payments
         pays?.forEach(p => {
-            totalPaid += parseFloat(p.amount || 0);
+            if(p.status === 'Received') totalPaid += parseFloat(p.amount);
+            else totalPaid -= parseFloat(p.amount);
+
             tbody.innerHTML += `
                 <tr style="background:#f0f9ff">
                     <td>${p.payment_date}</td>
-                    <td><i class="fas fa-university"></i> ${p.mode}</td>
+                    <td><span style="color:${p.status==='Received'?'green':'red'}">${p.status}</span> (${p.mode})</td>
                     <td>-</td>
-                    <td style="color:blue">₹${p.amount}</td>
-                    <td>-</td>
-                    <td class="action-icons no-print">
-                        <i class="fas fa-print"></i>
-                        <i class="fas fa-trash" style="color:#ffb3b3"></i>
-                    </td>
+                    <td style="font-weight:bold">₹${p.amount}</td>
+                    <td>₹${p.balance || '-'}</td>
+                    <td class="no-print"><i class="fas fa-print"></i></td>
                 </tr>`;
         });
 
-        // Stats Update
-        document.getElementById('boxDue').innerText = "₹ " + (totalValue - totalPaid).toFixed(2);
+        currentDue = totalVal - totalPaid;
+        document.getElementById('boxDue').innerText = "₹ " + currentDue.toFixed(2);
         document.getElementById('boxQty').innerText = prods?.length || 0;
-        document.getElementById('boxPrice').innerText = "₹ " + (totalValue / (prods?.length || 1)).toFixed(2);
+        document.getElementById('boxPrice').innerText = "₹ " + (totalVal / (prods?.length || 1)).toFixed(2);
     }
 
-    function viewDetails(p) {
-        const modal = document.getElementById('detailModal');
-        const content = document.getElementById('detailData');
+    // Modal Control
+    function openPaymentModal() {
+        document.getElementById('paymentModal').style.display = 'flex';
+        document.getElementById('pDate').valueAsDate = new Date();
+        document.getElementById('pAmount').focus();
         
-        content.innerHTML = `
-            <div class="detail-row"><span>Mother Category:</span><b>${p.mother_cat || 'N/A'}</b></div>
-            <div class="detail-row"><span>Sub Category:</span><b>${p.sub_cat || 'N/A'}</b></div>
-            <div class="detail-row"><span>Product Name:</span><b>${p.product_name}</b></div>
-            <div class="detail-row"><span>Quantity:</span><b>${p.quantity} ${p.unit}</b></div>
-            <div class="detail-row"><span>Unit Price:</span><b>₹${p.unit_price}</b></div>
-            <div class="detail-row"><span>Total Price:</span><b style="color:blue">₹${p.total_price}</b></div>
-            <div class="detail-row"><span>Paid at Entry:</span><b style="color:green">₹${p.total_price - (p.due_amount || 0)}</b></div>
-            <div class="detail-row"><span>Entry Mode:</span><b>${p.payment_mode || 'Cash'}</b></div>
-        `;
-        modal.style.display = 'flex';
+        // Auto calculation on input
+        document.getElementById('pAmount').oninput = function() {
+            let amt = parseFloat(this.value) || 0;
+            let status = document.getElementById('pStatus').value;
+            let newDue = status === 'Received' ? currentDue - amt : currentDue + amt;
+            document.getElementById('pNewDue').value = "₹ " + newDue.toFixed(2);
+        };
     }
 
-    function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
-    
-    function printStatement() {
-        const start = prompt("Start Date (YYYY-MM-DD):", "2024-01-01");
-        if(start) window.print();
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    // Save Payment
+    async function savePayment() {
+        const amt = parseFloat(document.getElementById('pAmount').value);
+        if(!amt) return alert("Amount লিখুন");
+
+        const status = document.getElementById('pStatus').value;
+        const finalDue = status === 'Received' ? currentDue - amt : currentDue + amt;
+
+        const { error } = await supabaseClient.from('payments').insert([{
+            acc_name: accName,
+            payment_date: document.getElementById('pDate').value,
+            status: status,
+            amount: amt,
+            mode: document.getElementById('pMode').value,
+            balance: finalDue
+        }]);
+
+        if(error) alert(error.message);
+        else {
+            closeModal('paymentModal');
+            loadAllData();
+        }
     }
+
+    // মাউস ছাড়া কাজ করার জন্য কিবোর্ড লজিক (Enter Key)
+    window.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            const payModal = document.getElementById('paymentModal');
+            if (payModal.style.display === 'flex') {
+                savePayment();
+            }
+        }
+        if (e.key === 'Escape') {
+            closeModal('paymentModal');
+        }
+    });
 
     window.onload = loadAllData;
 </script>
