@@ -22,9 +22,14 @@
 
         .top-bar {
             width: 100%; background: var(--dark); padding: 12px 20px;
-            display: flex; justify-content: flex-end; align-items: center;
+            display: flex; justify-content: space-between; align-items: center;
             box-sizing: border-box; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             position: sticky; top: 0; z-index: 1000;
+        }
+
+        .login-btn {
+            color: white; text-decoration: none; display: flex; align-items: center; gap: 8px;
+            font-size: 14px; background: var(--primary); padding: 5px 15px; border-radius: 20px;
         }
 
         .mode-btn {
@@ -69,12 +74,21 @@
             border-radius: 15px; text-decoration: none; color: var(--dark);
             display: flex; flex-direction: column; gap: 8px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: 0.3s;
-            border: 1px solid transparent;
+            border: 1px solid transparent; cursor: pointer;
         }
 
         .box:hover { transform: translateY(-3px); border-color: var(--primary); color: var(--primary); }
         .box i { font-size: 22px; }
         .box span { font-size: 11px; font-weight: bold; text-transform: uppercase; }
+
+        /* Report Modal Styles */
+        #reportModal {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            z-index: 2000; align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-content { background: white; padding: 20px; border-radius: 15px; width: 100%; max-width: 350px; }
+        .modal-content select, .modal-content input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }
+        .submit-btn { width: 100%; background: var(--secondary); color: white; padding: 10px; border: none; border-radius: 8px; font-weight: bold; }
 
         .footer-info { font-size: 11px; color: #aaa; margin-top: 30px; padding: 20px; text-align: center; }
     </style>
@@ -82,6 +96,9 @@
 <body>
 
     <div class="top-bar">
+        <a href="#" class="login-btn" onclick="openLogin()">
+            <i class="fas fa-sign-in-alt"></i> Login
+        </a>
         <button class="mode-btn" onclick="toggleView()">
             <i class="fas fa-desktop"></i> <span id="viewModeText">Desktop Mode</span>
         </button>
@@ -120,10 +137,30 @@
                 <i class="fas fa-print" style="color: #27ae60;"></i>
                 <span>Print Bills</span>
             </a>
+            <div class="box" onclick="openReport()">
+                <i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i>
+                <span>Report Problem</span>
+            </div>
         </div>
 
         <div class="footer-info">
             System Status: Online | Currency: INR (₹)
+        </div>
+    </div>
+
+    <div id="reportModal">
+        <div class="modal-content">
+            <h3 style="margin-top:0">Submit Report</h3>
+            <label style="font-size:12px">Select Issue (Bengali):</label>
+            <select id="reportIssue">
+                <option value="Takar hisab vul acha">টাকার হিসাব ভুল আছে</option>
+                <option value="Maler dam beshi dhora ache">মালের দাম বেশি ধরা আছে</option>
+                <option value="Maler mollo kom dhorechen">মালের মূল্য কম ধরেছেন</option>
+                <option value="Payment baki ache">আমার একটা পেমেন্ট এখনো যুক্ত করতে বাকি আছে</option>
+            </select>
+            <input type="text" id="userMobile" placeholder="Your Registered Mobile Number">
+            <button class="submit-btn" onclick="submitReport()">OK ENTER</button>
+            <button onclick="closeReport()" style="width:100%; background:none; border:none; color:gray; margin-top:10px; font-size:12px">Cancel</button>
         </div>
     </div>
 
@@ -135,6 +172,36 @@
             btnText.innerText = frame.classList.contains('desktop-mode') ? "Mobile Mode" : "Desktop Mode";
         }
 
+        function openReport() { document.getElementById('reportModal').style.display = 'flex'; }
+        function closeReport() { document.getElementById('reportModal').style.display = 'none'; }
+
+        function openLogin() {
+            let num = prompt("Enter your registered mobile number to login:");
+            if(num) alert("Attempting login for: " + num);
+            // Ekhane apnar admin account verification logic add kora jabe
+        }
+
+        async function submitReport() {
+            const issue = document.getElementById('reportIssue').value;
+            const mobile = document.getElementById('userMobile').value;
+
+            if(!mobile) { alert("Please enter mobile number"); return; }
+
+            try {
+                if (typeof supabaseClient !== 'undefined') {
+                    const { error } = await supabaseClient
+                        .from('reports') // Make sure this table exists in your Supabase
+                        .insert([{ mobile_number: mobile, issue: issue, status: 'pending' }]);
+                    
+                    if(error) throw error;
+                    alert("Report submitted successfully! Admin will check.");
+                    closeReport();
+                }
+            } catch (err) {
+                alert("Error: " + err.message);
+            }
+        }
+
         async function fetchLiveData() {
             try {
                 if (typeof supabaseClient !== 'undefined') {
@@ -144,19 +211,16 @@
                     if (e1 || e2) throw e1 || e2;
 
                     let cashIn = 0, cashOut = 0, totalDue = 0;
-                    
                     trans.forEach(item => {
                         cashIn += parseFloat(item.paid_amount || 0);
                         totalDue += parseFloat(item.due_amount || 0);
                     });
-
                     if(pays) {
                         pays.forEach(p => {
                             if(p.payment_type === 'took') cashIn += parseFloat(p.amount || 0);
                             if(p.payment_type === 'gave') cashOut += parseFloat(p.amount || 0);
                         });
                     }
-
                     document.getElementById('totalReceived').innerText = formatINR(cashIn);
                     document.getElementById('totalPayment').innerText = formatINR(cashOut);
                     document.getElementById('totalPrice').innerText = formatINR(cashIn - cashOut);
