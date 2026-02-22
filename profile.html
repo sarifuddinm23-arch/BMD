@@ -33,21 +33,20 @@
         th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #f1f5f9; }
         th { background: #f8fafc; color: #64748b; text-transform: uppercase; }
 
-        /* Modals */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center; }
-        .modal-content { background: white; width: 90%; max-width: 450px; padding: 25px; border-radius: 20px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .modal-content h3 { margin-top: 0; color: var(--dark); border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        
-        /* Form Styling */
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-size: 12px; margin-bottom: 5px; font-weight: bold; color: #64748b; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
-        input:focus, select:focus { outline: none; border-color: var(--secondary); }
-        
-        .save-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; }
-        .save-btn:hover { background: #059669; }
+        /* Icons & Actions */
+        .action-icons { display: flex; gap: 10px; }
+        .action-icons i { cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .fa-print { color: #64748b; }
+        .fa-edit { color: var(--secondary); }
+        .fa-trash { color: var(--danger); }
+        .fa-eye { color: #10b981; }
 
-        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #94a3b8; }
+        /* Full Details Modal */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-content { background: white; width: 90%; max-width: 500px; padding: 20px; border-radius: 20px; position: relative; }
+        .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #ddd; font-size: 14px; }
+        .detail-row b { color: var(--dark); }
+        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 20px; cursor: pointer; }
 
         @media print { .no-print { display: none; } }
     </style>
@@ -73,6 +72,7 @@
     <a href="received_product.html" class="nav-link"><i class="fas fa-plus-circle"></i><span>Add Rec.</span></a>
     <a href="sell_product.html" class="nav-link"><i class="fas fa-shopping-cart"></i><span>Add Sell</span></a>
     <div class="nav-link" onclick="openPaymentModal()"><i class="fas fa-wallet"></i><span>Payment</span></div>
+    <div class="nav-link" onclick="printStatement()"><i class="fas fa-file-invoice"></i><span>Statement</span></div>
     <div class="nav-link" onclick="location.reload()"><i class="fas fa-sync-alt"></i><span>Refresh</span></div>
 </div>
 
@@ -247,4 +247,4 @@
 </script>
 
 </body>
-</html>
+
