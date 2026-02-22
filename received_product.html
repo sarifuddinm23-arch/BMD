@@ -46,7 +46,7 @@
     <div class="form-card">
         <div style="margin-bottom: 25px;">
             <h2 style="margin:0; color:#0f172a;">Product Inward</h2>
-            <p style="font-size: 13px; color: #64748b;">কিবোর্ড দিয়ে এন্ট্রি করতে <kbd>Tab</kbd> এবং <kbd>Enter</kbd> ব্যবহার করুন।</p>
+            <p style="font-size: 13px; color: #64748b;">কিবোর্ড দিয়ে এন্ট্রি করতে <kbd>Tab</kbd> এবং <kbd>Enter</kbd> ব্যবহার করুন।</p>
         </div>
         
         <div class="form-grid">
@@ -114,16 +114,36 @@
     function toggleView() { document.getElementById('mainWrapper').classList.toggle('desktop-mode'); }
 
     async function initData() {
-        // ১. অ্যাকাউন্ট লোড করা
-        const { data: accounts } = await supabaseClient.from('accounts').select('account_name');
-        const accSelect = document.getElementById('accChoice');
-        accounts?.forEach(acc => accSelect.innerHTML += `<option value="${acc.account_name}">${acc.account_name}</option>`);
+        try {
+            // ১. অ্যাকাউন্ট লোড করা (আপনার ডাটাবেস কলাম 'name' অনুযায়ী)
+            const { data: accounts, error: accErr } = await supabaseClient
+                .from('accounts')
+                .select('name'); 
 
-        // ২. ক্যাটাগরি লোড করা
-        const { data: master } = await supabaseClient.from('master_data').select('category_name');
-        const mcSelect = document.getElementById('motherCat');
-        const uniqueCats = [...new Set(master?.map(item => item.category_name))];
-        uniqueCats.forEach(cat => mcSelect.innerHTML += `<option value="${cat}">${cat}</option>`);
+            if (accErr) console.error("Account Load Error:", accErr);
+
+            const accSelect = document.getElementById('accChoice');
+            accSelect.innerHTML = '<option value="">Select Account/Supplier</option>';
+            
+            if (accounts) {
+                accounts.forEach(acc => {
+                    // ড্রপডাউনে নামগুলো যোগ করা হচ্ছে
+                    accSelect.innerHTML += `<option value="${acc.name}">${acc.name}</option>`;
+                });
+            }
+
+            // ২. ক্যাটাগরি লোড করা
+            const { data: master } = await supabaseClient.from('master_data').select('category_name');
+            const mcSelect = document.getElementById('motherCat');
+            if (master) {
+                const uniqueCats = [...new Set(master.map(item => item.category_name))];
+                uniqueCats.forEach(cat => {
+                    mcSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+                });
+            }
+        } catch (e) {
+            console.error("Initialization failed:", e);
+        }
     }
 
     async function loadSubCats() {
@@ -131,7 +151,9 @@
         const { data } = await supabaseClient.from('master_data').select('sub_category_name').eq('category_name', mCat);
         const scSelect = document.getElementById('subCat');
         scSelect.innerHTML = '<option value="">Select Sub Category</option>';
-        data?.forEach(item => scSelect.innerHTML += `<option value="${item.sub_category_name}">${item.sub_category_name}</option>`);
+        data?.forEach(item => {
+            scSelect.innerHTML += `<option value="${item.sub_category_name}">${item.sub_category_name}</option>`;
+        });
     }
 
     function calculateTotal() {
@@ -143,6 +165,9 @@
 
     async function saveProduct() {
         const btn = document.getElementById('saveBtn');
+        const totalAmt = parseFloat(document.getElementById('totalDisplay').innerText);
+        const paidAmt = parseFloat(document.getElementById('payAmt').value) || 0;
+
         const data = {
             supplier_name: document.getElementById('accChoice').value,
             mother_cat: document.getElementById('motherCat').value,
@@ -151,8 +176,8 @@
             quantity: parseFloat(document.getElementById('qty').value),
             unit: document.getElementById('unit').value,
             unit_price: parseFloat(document.getElementById('unitPrice').value),
-            total_price: parseFloat(document.getElementById('totalDisplay').innerText),
-            due_amount: parseFloat(document.getElementById('totalDisplay').innerText) - (parseFloat(document.getElementById('payAmt').value) || 0)
+            total_price: totalAmt,
+            due_amount: totalAmt - paidAmt
         };
 
         if(!data.product_name || !data.quantity || !data.supplier_name) return alert("Account, Product and Quantity is required!");
@@ -173,7 +198,11 @@
 
     // কিবোর্ড শর্টকাট
     window.addEventListener('keydown', (e) => {
-        if(e.key === 'Enter' && !btn.disabled) saveProduct();
+        const btn = document.getElementById('saveBtn');
+        if(e.key === 'Enter' && !btn.disabled) {
+            // ইনপুট ফিল্ডে থাকাকালীন এন্টার দিলে সেভ হবে
+            saveProduct();
+        }
     });
 
     window.onload = initData;
