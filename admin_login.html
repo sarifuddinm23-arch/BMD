@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - My Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+</head>
+<body class="bg-gray-900 flex items-center justify-center h-screen">
+    <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
+        <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Admin Login</h2>
+        <div class="space-y-4">
+            <input type="email" id="email" placeholder="Email" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+            <input type="password" id="password" placeholder="Password" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+            <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition">Enter Dashboard</button>
+            <p id="msg" class="text-red-500 text-sm text-center mt-2"></p>
+        </div>
+    </div>
+
+    <script>
+        const adminUID = "f0a78810-62f3-48b8-b233-dfdd07cd5041";
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const msg = document.getElementById('msg');
+
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+            if (error) {
+                msg.innerText = "Login Failed: " + error.message;
+            } else if (data.user.id !== adminUID) {
+                // Jodi UID match na kore tahole logout kore debe
+                await supabaseClient.auth.signOut();
+                msg.innerText = "Access Denied: You are not the authorized Admin.";
+            } else {
+                window.location.href = "admin.html";
+            }
+        }
+    </script>
+</body>
+</html>
