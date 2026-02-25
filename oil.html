@@ -3,153 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Oil Business Dashboard - My Manager</title>
+    <title>Oil Business Dashboard - BMD</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        .stat-card { transition: all 0.3s ease; }
-        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        .live-box { transition: all 0.3s ease; border-radius: 24px; }
+        .live-box:hover { transform: scale(1.02); }
+        .acc-card { border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
 
-    <header class="bg-gray-900 text-white p-4 sticky top-0 z-50 shadow-lg">
+    <header class="bg-gray-900 text-white p-4 sticky top-0 z-50 shadow-md">
         <div class="max-w-7xl mx-auto flex items-center justify-between">
             <div class="flex items-center gap-4">
-                <button onclick="window.location.href='admin.html'" class="hover:bg-gray-800 p-2 rounded-full transition">
-                    <i class="fas fa-arrow-left text-xl"></i>
-                </button>
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-gas-pump text-orange-500 text-2xl"></i>
-                    <h1 class="text-xl font-bold tracking-tight uppercase">Oil Business</h1>
-                </div>
+                <button onclick="history.back()" class="p-2 rounded-full hover:bg-gray-800"><i class="fas fa-arrow-left"></i></button>
+                <h1 class="text-lg font-bold">OIL BUSINESS LIVE</h1>
             </div>
-            <div class="hidden md:flex gap-2">
-                <span class="bg-gray-800 px-4 py-1 rounded-full text-xs text-gray-400 border border-gray-700">Desktop View Enabled</span>
-            </div>
+            <div class="text-xs bg-orange-500 px-3 py-1 rounded-full font-bold animate-pulse">LIVE VIEW</div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto p-4 md:p-8">
+    <main class="max-w-7xl mx-auto p-4">
         
-        <div class="mb-8">
-            <h2 class="text-2xl font-bold text-gray-800">Business Control Center</h2>
-            <p class="text-gray-500 text-sm">তেল ব্যবসার স্টক এবং লেনদেনের বর্তমান অবস্থা</p>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+            <div class="live-box bg-white p-4 border-b-4 border-orange-500 shadow-sm">
+                <small class="text-gray-400 font-bold block mb-1 uppercase text-[10px]">মোট মাল (Stock)</small>
+                <h3 id="view_stockLiter" class="text-xl font-black text-gray-800">0 Ltr</h3>
+                <div class="text-[9px] text-orange-500 font-bold mt-1">Petrol + Diesel</div>
+            </div>
+
+            <div class="live-box bg-white p-4 border-b-4 border-blue-500 shadow-sm">
+                <small class="text-gray-400 font-bold block mb-1 uppercase text-[10px]">স্টক মালের মূল্য</small>
+                <h3 id="view_stockValue" class="text-xl font-black text-gray-800">₹ 0</h3>
+            </div>
+
+            <div class="live-box bg-white p-4 border-b-4 border-purple-500 shadow-sm">
+                <small class="text-gray-400 font-bold block mb-1 uppercase text-[10px]">মোট বিক্রি (Qty)</small>
+                <h3 id="view_sellQty" class="text-xl font-black text-gray-800">0 Ltr</h3>
+            </div>
+
+            <div class="live-box bg-white p-4 border-b-4 border-green-500 shadow-sm">
+                <small class="text-gray-400 font-bold block mb-1 uppercase text-[10px]">মোট বিক্রি মূল্য</small>
+                <h3 id="view_sellPrice" class="text-xl font-black text-green-600">₹ 0</h3>
+            </div>
+
+            <div class="live-box bg-white p-4 border-b-4 border-red-500 shadow-sm col-span-2 md:col-span-1">
+                <small class="text-gray-400 font-bold block mb-1 uppercase text-[10px]">মোট লাভ (Profit)</small>
+                <h3 id="view_profit" class="text-2xl font-black text-red-600">₹ 0</h3>
+                <div class="text-[9px] text-gray-400">Total Net Profit</div>
+            </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-            
-            <div class="stat-card bg-white p-6 rounded-3xl border border-gray-100 shadow-sm border-l-8 border-orange-500">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="bg-orange-100 p-3 rounded-2xl text-orange-600">
-                        <i class="fas fa-oil-can text-2xl"></i>
-                    </div>
-                </div>
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Petrol Stock</p>
-                <h3 id="petrolLiter" class="text-3xl font-black text-gray-800 mt-1">0 <span class="text-sm font-normal">Liter</span></h3>
-            </div>
-
-            <div class="stat-card bg-white p-6 rounded-3xl border border-gray-100 shadow-sm border-l-8 border-blue-600">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="bg-blue-100 p-3 rounded-2xl text-blue-600">
-                        <i class="fas fa-file-invoice-dollar text-2xl"></i>
-                    </div>
-                </div>
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Stock Total Price</p>
-                <h3 id="petrolValue" class="text-3xl font-black text-gray-800 mt-1">₹ 0.00</h3>
-            </div>
-
-            <div class="stat-card bg-white p-6 rounded-3xl border border-gray-100 shadow-sm border-l-8 border-green-600">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="bg-green-100 p-3 rounded-2xl text-green-600">
-                        <i class="fas fa-hand-holding-usd text-2xl"></i>
-                    </div>
-                </div>
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Received</p>
-                <h3 id="receivedMoney" class="text-3xl font-black text-green-700 mt-1">₹ 0.00</h3>
-                <p class="text-[10px] text-gray-400 mt-1">Seller/Retailer/Wholesaler</p>
-            </div>
-
-            <div class="stat-card bg-white p-6 rounded-3xl border border-gray-100 shadow-sm border-l-8 border-red-500">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="bg-red-100 p-3 rounded-2xl text-red-600">
-                        <i class="fas fa-truck-moving text-2xl"></i>
-                    </div>
-                </div>
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Paid to Distributor</p>
-                <h3 id="paidDue" class="text-3xl font-black text-red-600 mt-1">₹ 0.00</h3>
-                <p class="text-[10px] text-gray-400 mt-1">Total Due Settled</p>
-            </div>
-
+        <div class="relative mb-6">
+            <i class="fas fa-search absolute left-4 top-4 text-gray-400"></i>
+            <input type="text" id="accSearch" onkeyup="searchAccounts()" placeholder="অ্যাকাউন্ট বা নাম দিয়ে খুঁজুন..." 
+                   class="w-full p-4 pl-12 rounded-2xl border-none shadow-sm focus:ring-2 focus:ring-orange-500 outline-none">
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            <div onclick="window.location.href='product.html'" class="bg-indigo-600 hover:bg-indigo-700 p-8 rounded-3xl text-white flex flex-col items-center cursor-pointer transition-all shadow-xl shadow-indigo-200 group">
-                <div class="bg-white/20 p-4 rounded-full mb-4 group-hover:scale-110 transition">
-                    <i class="fas fa-boxes text-3xl"></i>
-                </div>
-                <h4 class="text-xl font-bold">Manage Products</h4>
-                <p class="text-indigo-100 text-xs mt-2">নতুন পণ্য বা স্টক যোগ করুন</p>
-            </div>
+        <div class="flex items-center justify-between mb-4 px-2">
+            <h2 class="font-bold text-gray-700">পার্টনার এবং কাস্টমার লিস্ট</h2>
+            <span class="text-xs text-gray-400" id="accCount">0 Accounts</span>
+        </div>
 
-            <div onclick="window.location.href='setting.html'" class="bg-gray-800 hover:bg-gray-900 p-8 rounded-3xl text-white flex flex-col items-center cursor-pointer transition-all shadow-xl shadow-gray-200 group">
-                <div class="bg-white/10 p-4 rounded-full mb-4 group-hover:rotate-45 transition">
-                    <i class="fas fa-cog text-3xl"></i>
-                </div>
-                <h4 class="text-xl font-bold">Oil Settings</h4>
-                <p class="text-gray-400 text-xs mt-2">রেট এবং অন্যান্য কনফিগারেশন</p>
-            </div>
-
-            <div class="bg-white border-2 border-dashed border-gray-200 p-8 rounded-3xl text-gray-400 flex flex-col items-center justify-center">
-                <i class="fas fa-chart-bar text-3xl mb-4"></i>
-                <h4 class="text-xl font-bold">Coming Soon</h4>
-                <p class="text-xs mt-2">Sales Analytics & Reports</p>
-            </div>
-
+        <div id="accountContainer" class="grid grid-cols-1 gap-4">
+            <div class="text-center p-10 text-gray-400">Loading data...</div>
         </div>
 
     </main>
 
     <script>
-        // Supabase থেকে তেল ব্যবসার ডাটা লোড করার লজিক
-        async function loadOilData() {
+        // ১. ডাটা লোড করা
+        async function loadOilDashboard() {
             try {
-                // এখানে আপনার ডাটাবেস টেবিল অনুযায়ী কোয়েরি হবে
-                // উদাহরণস্বরূপ: 'product_list' থেকে যেখানে ক্যাটাগরি 'Petrol'
-                const { data: oilProducts } = await supabaseClient
-                    .from('product_list')
-                    .select('*')
-                    .ilike('name', '%petrol%');
+                // স্টক ডাটা (received_products থেকে যেখানে Unit 'Liter')
+                const { data: stocks } = await supabaseClient.from('received_products').select('*');
+                // সেল ডাটা (ধরে নিচ্ছি 'sell_products' নামে টেবিল আছে বা ক্যাটাগরি দিয়ে আলাদা)
+                const { data: sells } = await supabaseClient.from('sell_products').select('*'); 
+                // অ্যাকাউন্ট ডাটা
+                const { data: accounts } = await supabaseClient.from('accounts').select('*');
 
-                if(oilProducts) {
-                    let totalLiters = oilProducts.reduce((acc, item) => acc + (parseFloat(item.stock) || 0), 0);
-                    let totalVal = oilProducts.reduce((acc, item) => acc + ((parseFloat(item.stock) || 0) * (parseFloat(item.purchase_price) || 0)), 0);
-                    
-                    document.getElementById('petrolLiter').innerHTML = `${totalLiters} <span class="text-sm font-normal">Liter</span>`;
-                    document.getElementById('petrolValue').innerText = `₹ ${totalVal.toLocaleString('en-IN')}`;
-                }
+                // লাইভ ক্যালকুলেশন
+                let sQty = 0, sVal = 0;
+                stocks?.forEach(s => {
+                    sQty += parseFloat(s.quantity || 0);
+                    sVal += parseFloat(s.total_price || 0);
+                });
 
-                // পেমেন্ট ডাটা (Received এবং Paid)
-                const { data: payments } = await supabaseClient.from('payments').select('*');
-                if(payments) {
-                    let received = payments.filter(p => p.action === 'received').reduce((acc, p) => acc + (parseFloat(p.total_amt) || 0), 0);
-                    let paid = payments.filter(p => p.action === 'payout').reduce((acc, p) => acc + (parseFloat(p.total_amt) || 0), 0);
-                    
-                    document.getElementById('receivedMoney').innerText = `₹ ${received.toLocaleString('en-IN')}`;
-                    document.getElementById('paidDue').innerText = `₹ ${paid.toLocaleString('en-IN')}`;
-                }
+                let sellQty = 0, sellPrice = 0, totalCostOfSold = 0;
+                sells?.forEach(sl => {
+                    sellQty += parseFloat(sl.quantity || 0);
+                    sellPrice += parseFloat(sl.total_price || 0);
+                    totalCostOfSold += (parseFloat(sl.quantity || 0) * parseFloat(sl.unit_price_buy || 0)); // কেনা দাম
+                });
+
+                let profit = sellPrice - totalCostOfSold;
+
+                // বক্সে ডাটা বসানো
+                document.getElementById('view_stockLiter').innerText = sQty.toLocaleString() + " Ltr";
+                document.getElementById('view_stockValue').innerText = "₹ " + sVal.toLocaleString();
+                document.getElementById('view_sellQty').innerText = sellQty.toLocaleString() + " Ltr";
+                document.getElementById('view_sellPrice').innerText = "₹ " + sellPrice.toLocaleString();
+                document.getElementById('view_profit').innerText = "₹ " + profit.toLocaleString();
+
+                // অ্যাকাউন্ট লিস্ট রেন্ডার
+                renderAccounts(accounts);
+                document.getElementById('accCount').innerText = accounts?.length + " Accounts";
 
             } catch (err) {
-                console.error("Error loading oil data:", err);
+                console.error("Error:", err);
             }
         }
 
-        window.onload = loadOilData;
+        // ২. অ্যাকাউন্ট লিস্ট রেন্ডার (বড় বক্স ভিউ)
+        function renderAccounts(data) {
+            const container = document.getElementById('accountContainer');
+            container.innerHTML = "";
+
+            data?.forEach(acc => {
+                const isWholesaler = acc.acc_type === 'Wholesaler';
+                container.innerHTML += `
+                    <div class="acc-card bg-white p-6 flex flex-col gap-4 border-l-8 ${isWholesaler ? 'border-red-500' : 'border-green-500'} cursor-pointer" 
+                         onclick="window.location.href='profile.html?name=${encodeURIComponent(acc.name)}'">
+                        
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="text-xl font-extrabold text-gray-800 uppercase">${acc.name}</h4>
+                                <span class="text-[10px] bg-gray-100 px-2 py-1 rounded-md font-bold text-gray-500">${acc.acc_type}</span>
+                            </div>
+                            <div class="text-right">
+                                <small class="text-gray-400 block text-[10px] font-bold">CURRENT BALANCE</small>
+                                <b class="text-2xl ${parseFloat(acc.balance) < 0 ? 'text-red-600' : 'text-green-600'}">₹ ${acc.balance || 0}</b>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 border-t pt-4">
+                            <div class="text-center">
+                                <small class="text-[9px] text-gray-400 block font-bold">TOTAL QTY</small>
+                                <span class="font-bold text-sm">${acc.total_qty || 0} L</span>
+                            </div>
+                            <div class="text-center border-x">
+                                <small class="text-[9px] text-gray-400 block font-bold">TOTAL PAID</small>
+                                <span class="font-bold text-sm text-blue-600">₹ ${acc.total_paid || 0}</span>
+                            </div>
+                            <div class="text-center">
+                                <small class="text-[9px] text-gray-400 block font-bold">DUE</small>
+                                <span class="font-bold text-sm text-red-500">₹ ${acc.due || 0}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // ৩. সার্চ ফাংশন
+        function searchAccounts() {
+            let input = document.getElementById('accSearch').value.toLowerCase();
+            let cards = document.getElementsByClassName('acc-card');
+
+            for (let i = 0; i < cards.length; i++) {
+                let name = cards[i].getElementsByTagName('h4')[0].innerText.toLowerCase();
+                if (name.includes(input)) {
+                    cards[i].style.display = "";
+                } else {
+                    cards[i].style.display = "none";
+                }
+            }
+        }
+
+        window.onload = loadOilDashboard;
     </script>
 </body>
 </html>
