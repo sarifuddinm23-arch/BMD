@@ -3,138 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BMD Management - Dashboard</title>
+    <title>BMD Management - Live Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --primary: #10b981; --secondary: #3b82f6; --dark: #0f172a; --bg: #f1f5f9; --white: #ffffff; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; color: var(--dark); }
+        :root { --primary: #10b981; --secondary: #3b82f6; --dark: #0f172a; --bg: #f1f5f9; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; }
 
-        .header { background: var(--dark); color: white; padding: 20px; text-align: center; border-radius: 0 0 25px 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        /* Login Overlay */
+        #loginOverlay { position: fixed; inset: 0; background: var(--dark); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .login-card { background: white; padding: 30px; border-radius: 24px; width: 100%; max-width: 350px; text-align: center; }
+        .login-card input { width: 100%; padding: 15px; margin: 15px 0; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 16px; box-sizing: border-box; }
+        .login-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
+
+        /* Main UI */
+        .header { background: var(--dark); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
         
-        /* Live View Boxes */
-        .live-dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; padding: 15px; }
-        .stat-card { background: var(--white); padding: 15px; border-radius: 18px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-bottom: 4px solid var(--secondary); }
-        .stat-card small { font-size: 11px; color: #64748b; font-weight: 600; display: block; margin-bottom: 5px; }
+        .live-dashboard { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 15px; }
+        .stat-card { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; border-bottom: 4px solid var(--secondary); }
+        .stat-card.full { grid-column: span 2; border-bottom-color: #ef4444; }
+        .stat-card small { font-size: 11px; color: #64748b; font-weight: bold; display: block; margin-bottom: 5px; }
         .stat-card h3 { margin: 0; font-size: 18px; color: var(--dark); }
-        .stat-card.red { border-bottom-color: #ef4444; }
-        .stat-card.green { border-bottom-color: var(--primary); }
 
-        .section-title { padding: 10px 20px; font-size: 16px; font-weight: 700; color: #475569; display: flex; align-items: center; gap: 10px; }
+        .section-title { padding: 10px 20px; font-size: 14px; font-weight: bold; color: #64748b; background: #e2e8f0; margin-top: 10px; }
+        .acc-item { background: white; margin: 10px 15px; padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .wholesaler-label { font-size: 10px; background: #fee2e2; color: #ef4444; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
         
-        .account-list { padding: 10px 15px; }
-        .acc-item { 
-            background: white; margin-bottom: 12px; padding: 15px; border-radius: 15px; 
-            display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.03); cursor: pointer; transition: 0.2s;
-        }
-        .acc-item:hover { transform: scale(1.02); }
-        .acc-info h4 { margin: 0; font-size: 15px; }
-        .acc-info span { font-size: 12px; color: #94a3b8; }
-        .acc-balance { text-align: right; }
-        .acc-balance b { display: block; font-size: 14px; }
-        .acc-balance small { font-size: 10px; color: #64748b; }
-
-        .type-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: #e2e8f0; color: #475569; margin-left: 5px; }
-        .wholesaler-badge { background: #fee2e2; color: #ef4444; }
-
-        .fab { position: fixed; bottom: 20px; right: 20px; background: var(--dark); color: white; width: 56px; height: 56px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; }
+        .logout-btn { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h2 style="margin:0;">BMD BUSINESS</h2>
-    <p style="margin:5px 0 0; font-size:12px; opacity:0.8;">Live Business Overview</p>
-</div>
-
-<div class="live-dashboard">
-    <div class="stat-card">
-        <small>মোট মাল (Stock Qty)</small>
-        <h3 id="totalQty">0</h3>
-    </div>
-    <div class="stat-card">
-        <small>১ ইউনিট মালের মূল্য (Avg)</small>
-        <h3 id="avgPrice">₹ 0</h3>
-    </div>
-    <div class="stat-card">
-        <small>মোট মালের মূল্য (Stock Value)</small>
-        <h3 id="totalStockVal">₹ 0</h3>
-    </div>
-    <div class="stat-card green">
-        <small>মোট টাকা দেওয়া হয়েছে</small>
-        <h3 id="totalPaid">₹ 0</h3>
-    </div>
-    <div class="stat-card red">
-        <small>মোট টাকা বাকি আছে</small>
-        <h3 id="totalDue">₹ 0</h3>
+<div id="loginOverlay">
+    <div class="login-card">
+        <h2>BMD Login</h2>
+        <p>আপনার রেজিস্টার্ড মোবাইল নম্বর দিন</p>
+        <input type="tel" id="mobileInput" placeholder="017XXXXXXXX">
+        <button class="login-btn" onclick="handleLogin()">LOGIN</button>
     </div>
 </div>
 
-<div class="section-title"><i class="fas fa-truck-loading"></i> WHOLESALERS (যাদের কাছে আমি ঋণী)</div>
-<div id="wholesalerList" class="account-list"></div>
+<div id="mainContent" style="display:none;">
+    <div class="header">
+        <div>
+            <h2 style="margin:0; font-size: 18px;">Dashboard</h2>
+            <small id="userMobileDisplay"></small>
+        </div>
+        <button class="logout-btn" onclick="handleLogout()">Logout</button>
+    </div>
 
-<div class="section-title"><i class="fas fa-users"></i> CUSTOMERS / OTHERS (যারা আমার থেকে কেনে)</div>
-<div id="customerList" class="account-list"></div>
+    <div class="live-dashboard">
+        <div class="stat-card">
+            <small>মোট মাল (Stock)</small>
+            <h3 id="view_totalQty">0</h3>
+        </div>
+        <div class="stat-card">
+            <small>১ ইউনিটের মূল্য</small>
+            <h3 id="view_avgPrice">₹ 0</h3>
+        </div>
+        <div class="stat-card">
+            <small>মোট মালের মূল্য</small>
+            <h3 id="view_totalStockVal">₹ 0</h3>
+        </div>
+        <div class="stat-card">
+            <small>মোট টাকা দেওয়া হয়েছে</small>
+            <h3 id="view_totalPaid">₹ 0</h3>
+        </div>
+        <div class="stat-card full">
+            <small>মোট টাকা বাকি আছে (Net Due)</small>
+            <h3 id="view_totalDue">₹ 0</h3>
+        </div>
+    </div>
 
-<div class="fab" onclick="window.location.href='add_account.html'"><i class="fas fa-user-plus"></i></div>
+    <div class="section-title">WHOLESALER (কাঁচামাল বিক্রেতা)</div>
+    <div id="wholesalerList"></div>
+
+    <div class="section-title">CUSTOMERS (ক্রেতাগণ)</div>
+    <div id="customerList"></div>
+</div>
 
 <script>
-    async function loadDashboard() {
-        // ১. সব অ্যাকাউন্ট আনা
+    // ১. লগইন হ্যান্ডলিং
+    function checkSession() {
+        const user = localStorage.getItem('bmd_user');
+        if (user) {
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            document.getElementById('userMobileDisplay').innerText = "User: " + user;
+            loadDashboardData(user);
+        }
+    }
+
+    async function handleLogin() {
+        const mobile = document.getElementById('mobileInput').value;
+        if (mobile.length < 10) return alert("সঠিক মোবাইল নম্বর দিন!");
+
+        // এখানে আপনি চাইলে সুপাবেস থেকে ইউজার ভেরিফাই করতে পারেন
+        // আপাতত লোকাল সেশনে সেভ করা হচ্ছে
+        localStorage.setItem('bmd_user', mobile);
+        location.reload();
+    }
+
+    function handleLogout() {
+        localStorage.removeItem('bmd_user');
+        location.reload();
+    }
+
+    // ২. ডেটা লোড করা
+    async function loadDashboardData(mobile) {
+        // অ্যাকাউন্ট লোড (শুধুমাত্র এই ইউজারের সাথে যুক্ত ডেটা বা সব দেখতে চাইলে ফিল্টার সরাবেন)
         const { data: accounts } = await supabaseClient.from('accounts').select('*');
         
-        // ২. সব ট্রানজ্যাকশন ও প্রোডাক্ট ডাটা আনা (রিপোর্টের জন্য)
-        const { data: prods } = await supabaseClient.from('received_products').select('quantity, total_price, unit_price');
-        const { data: pays } = await supabaseClient.from('payments').select('amount, status');
+        // ট্রানজ্যাকশন লোড
+        const { data: prods } = await supabaseClient.from('received_products').select('*');
+        const { data: pays } = await supabaseClient.from('payments').select('*');
 
-        // লাইভ ভিউ ক্যালকুলেশন
-        let m_qty = prods?.reduce((s, i) => s + parseFloat(i.quantity || 0), 0) || 0;
-        let m_val = prods?.reduce((s, i) => s + parseFloat(i.total_price || 0), 0) || 0;
-        let avg_p = m_qty > 0 ? (m_val / m_qty) : 0;
-        
-        let t_paid = pays?.filter(p => p.status === 'Payout').reduce((s, i) => s + parseFloat(i.amount || 0), 0) || 0;
-        let t_received = pays?.filter(p => p.status === 'Received').reduce((s, i) => s + parseFloat(i.amount || 0), 0) || 0;
-        let t_due = m_val - t_paid;
+        // লাইভ ক্যালকুলেশন (Live View Boxes)
+        let totalQty = 0;
+        let totalVal = 0;
+        prods?.forEach(p => {
+            totalQty += parseFloat(p.quantity || 0);
+            totalVal += parseFloat(p.total_price || 0);
+        });
 
-        // ড্যাশবোর্ড আপডেট
-        document.getElementById('totalQty').innerText = m_qty.toLocaleString();
-        document.getElementById('avgPrice').innerText = "₹ " + avg_p.toFixed(2);
-        document.getElementById('totalStockVal').innerText = "₹ " + m_val.toLocaleString();
-        document.getElementById('totalPaid').innerText = "₹ " + t_paid.toLocaleString();
-        document.getElementById('totalDue').innerText = "₹ " + t_due.toLocaleString();
+        let totalPaid = pays?.filter(p => p.status === 'Payout').reduce((s, i) => s + parseFloat(i.amount || 0), 0) || 0;
+        let totalReceived = pays?.filter(p => p.status === 'Received').reduce((s, i) => s + parseFloat(i.amount || 0), 0) || 0;
 
-        // অ্যাকাউন্ট লিস্ট রেন্ডার
+        // UI আপডেট
+        document.getElementById('view_totalQty').innerText = totalQty;
+        document.getElementById('view_avgPrice').innerText = "₹ " + (totalQty > 0 ? (totalVal/totalQty).toFixed(2) : 0);
+        document.getElementById('view_totalStockVal').innerText = "₹ " + totalVal.toFixed(2);
+        document.getElementById('view_totalPaid').innerText = "₹ " + totalPaid.toFixed(2);
+        document.getElementById('view_totalDue').innerText = "₹ " + (totalVal - totalPaid).toFixed(2);
+
+        // লিস্ট রেন্ডারিং
         const wList = document.getElementById('wholesalerList');
         const cList = document.getElementById('customerList');
         wList.innerHTML = ""; cList.innerHTML = "";
 
-        if (accounts) {
-            accounts.forEach(acc => {
-                const itemHtml = `
-                    <div class="acc-item" onclick="window.location.href='profile.html?name=${encodeURIComponent(acc.name)}'">
-                        <div class="acc-info">
-                            <h4>${acc.name} ${acc.acc_type === 'Wholesaler' ? '<span class="type-badge wholesaler-badge">Wholesaler</span>' : '<span class="type-badge">Customer</span>'}</h4>
-                            <span>ID: ${acc.id.slice(0,8)}</span>
-                        </div>
-                        <div class="acc-balance">
-                            <b style="color: ${acc.acc_type === 'Wholesaler' ? '#ef4444' : '#10b981'}">₹ ${parseFloat(acc.balance || 0).toFixed(2)}</b>
-                            <small>${acc.acc_type === 'Wholesaler' ? 'আমাকে দিতে হবে' : 'পাওনা'}</small>
-                        </div>
+        accounts?.forEach(acc => {
+            const html = `
+                <div class="acc-item" onclick="location.href='profile.html?name=${encodeURIComponent(acc.name)}'">
+                    <div>
+                        <b>${acc.name}</b>
+                        ${acc.acc_type === 'Wholesaler' ? '<span class="wholesaler-label">Wholesaler</span>' : ''}
                     </div>
-                `;
-
-                if (acc.acc_type === 'Wholesaler') {
-                    wList.innerHTML += itemHtml;
-                } else {
-                    cList.innerHTML += itemHtml;
-                }
-            });
-        }
+                    <div style="text-align:right">
+                        <span style="color:${acc.acc_type === 'Wholesaler' ? 'red' : 'green'}">₹ ${acc.balance || 0}</span>
+                    </div>
+                </div>
+            `;
+            if(acc.acc_type === 'Wholesaler') wList.innerHTML += html;
+            else cList.innerHTML += html;
+        });
     }
 
-    window.onload = loadDashboard;
+    window.onload = checkSession;
 </script>
 
 </body>
