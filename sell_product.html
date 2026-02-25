@@ -8,7 +8,6 @@
     <script src="config.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Sell পেজের জন্য থিম কালার Orange/Red রাখা হয়েছে যাতে পার্থক্য বোঝা যায় */
         :root { --primary: #e67e22; --dark: #0f172a; --bg: #f8fafc; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding-bottom: 50px; }
         
@@ -27,8 +26,10 @@
         input, select { padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 15px; outline: none; transition: 0.2s; }
         input:focus, select:focus { border-color: var(--primary); background: #fffaf5; box-shadow: 0 0 0 4px rgba(230, 126, 34, 0.1); }
 
-        .total-box { background: #fff7ed; padding: 20px; border-radius: 16px; margin-top: 20px; border: 2px dashed #fed7aa; display: flex; justify-content: space-between; align-items: center; }
+        .total-box { background: #fff7ed; padding: 20px; border-radius: 16px; margin-top: 20px; border: 2px dashed #fed7aa; display: flex; flex-direction: column; gap: 10px; }
+        .total-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
         .total-box h2 { margin: 0; color: #9a3412; font-size: 28px; font-weight: 800; }
+        .due-text { color: #e74c3c; font-weight: bold; font-size: 18px; }
 
         .save-btn { width: 100%; background: var(--primary); color: white; border: none; padding: 18px; border-radius: 14px; font-size: 18px; font-weight: 700; cursor: pointer; margin-top: 25px; transition: 0.3s; box-shadow: 0 10px 15px -3px rgba(230, 126, 34, 0.3); }
         .save-btn:hover { background: #d35400; transform: translateY(-2px); }
@@ -98,13 +99,19 @@
 
             <div class="input-group">
                 <label>Payment Received (কত টাকা পেলেন)</label>
-                <input type="number" id="payAmt" placeholder="0.00">
+                <input type="number" id="payAmt" placeholder="0.00" oninput="calculateTotal()">
             </div>
         </div>
 
         <div class="total-box">
-            <span style="color: #9a3412; font-weight: bold; font-size: 14px;">TOTAL BILL AMOUNT:</span>
-            <h2 id="totalDisplay">0.00</h2>
+            <div class="total-row">
+                <span style="color: #9a3412; font-weight: bold; font-size: 14px;">TOTAL BILL:</span>
+                <h2 id="totalDisplay">0.00</h2>
+            </div>
+            <div class="total-row" style="border-top: 1px solid #fed7aa; padding-top: 10px;">
+                <span style="color: #e74c3c; font-weight: bold; font-size: 14px;">DUE AMOUNT:</span>
+                <span id="dueDisplay" class="due-text">0.00</span>
+            </div>
         </div>
 
         <button class="save-btn" onclick="saveSellData()" id="saveBtn">CONFIRM SELL & SAVE</button>
@@ -116,7 +123,7 @@
 
     async function initData() {
         try {
-            // ১. কাস্টমার লিস্ট লোড (Accounts টেবিল থেকে)
+            // ১. কাস্টমার লিস্ট লোড
             const { data: accounts } = await supabaseClient.from('accounts').select('name'); 
             const accSelect = document.getElementById('accChoice');
             if (accounts) {
@@ -125,7 +132,7 @@
                 });
             }
 
-            // ২. ক্যাটাগরি লোড (Master Data থেকে)
+            // ২. ক্যাটাগরি লোড
             const { data: master } = await supabaseClient.from('master_data').select('category_name');
             const mcSelect = document.getElementById('motherCat');
             if (master) {
@@ -147,38 +154,48 @@
         });
     }
 
+    // ৩. অটো ক্যালকুলেশন (টোটাল এবং ডিউ)
     function calculateTotal() {
         const qty = parseFloat(document.getElementById('qty').value) || 0;
         const price = parseFloat(document.getElementById('unitPrice').value) || 0;
+        const paid = parseFloat(document.getElementById('payAmt').value) || 0;
+        
         const total = qty * price;
+        const due = total - paid;
+
         document.getElementById('totalDisplay').innerText = total.toFixed(2);
+        document.getElementById('dueDisplay').innerText = due.toFixed(2);
     }
 
     async function saveSellData() {
         const btn = document.getElementById('saveBtn');
         const totalAmt = parseFloat(document.getElementById('totalDisplay').innerText);
-        const receivedAmt = parseFloat(document.getElementById('payAmt').value) || 0;
+        const paidAmt = parseFloat(document.getElementById('payAmt').value) || 0;
+        const dueAmt = totalAmt - paidAmt;
 
-        const data = {
+        const payload = {
             party_name: document.getElementById('accChoice').value,
             mother_cat: document.getElementById('motherCat').value,
             sub_cat: document.getElementById('subCat').value,
             product_name: document.getElementById('pName').value,
-            quantity: parseFloat(document.getElementById('qty').value),
+            quantity: parseFloat(document.getElementById('qty').value) || 0,
             unit: document.getElementById('unit').value,
-            unit_price: parseFloat(document.getElementById('unitPrice').value),
+            unit_price: parseFloat(document.getElementById('unitPrice').value) || 0,
             total_price: totalAmt,
-            due_amount: totalAmt - receivedAmt,
-            type: 'sell' // এটি একটি সেল ট্রানজাকশন তা চেনার জন্য
+            paid_amount: paidAmt,
+            due_amount: dueAmt,
+            type: 'sell',
+            created_at: new Date()
         };
 
-        if(!data.product_name || !data.quantity || !data.party_name) return alert("Customer, Product and Quantity are required!");
+        if(!payload.product_name || !payload.quantity || !payload.party_name) {
+            return alert("Customer, Product and Quantity are required!");
+        }
 
         btn.disabled = true;
         btn.innerText = "Processing Sell...";
 
-        // এখানে আপনি আপনার পছন্দমতো টেবিল নাম দিতে পারেন (যেমন 'transactions' বা 'sold_products')
-        const { error } = await supabaseClient.from('transactions').insert([data]);
+        const { error } = await supabaseClient.from('transactions').insert([payload]);
 
         if (error) {
             alert("Error: " + error.message);
@@ -187,6 +204,7 @@
             location.reload();
         }
         btn.disabled = false;
+        btn.innerText = "CONFIRM SELL & SAVE";
     }
 
     window.addEventListener('keydown', (e) => {
