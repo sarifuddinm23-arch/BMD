@@ -44,6 +44,9 @@
         .stat-card { background: white; padding: 12px; border-radius: 10px; border-left: 5px solid #ddd; }
         .stat-card.received { border-color: var(--success); }
         .stat-card.payment { border-color: var(--danger); }
+        .stat-card.balance { border-color: var(--secondary); }
+        .stat-card.due { border-color: var(--primary); }
+        
         .stat-label { font-size: 12px; font-weight: bold; color: #555; }
         .stat-value { display: block; font-size: 15px; font-weight: bold; margin-top: 5px; }
 
@@ -92,13 +95,13 @@
             </div>
         </div>
 
-        <header><h1>Business Dashboard</h1></header>
+        <header><h1 style="text-align: center; font-size: 22px; color: var(--dark);">Business Dashboard</h1></header>
 
         <div class="stats-grid">
-            <div class="stat-card received"><span class="stat-label">মোট জমা</span><span class="stat-value" id="totalReceived">₹ 0.00</span></div>
-            <div class="stat-card payment"><span class="stat-label">মোট খরচ</span><span class="stat-value" id="totalPayment">₹ 0.00</span></div>
-            <div class="stat-card balance"><span class="stat-label">নিট ক্যাশ</span><span class="stat-value" id="totalPrice">₹ 0.00</span></div>
-            <div class="stat-card due"><span class="stat-label">মোট বাকি</span><span class="stat-value" id="paymentStatus">₹ 0.00</span></div>
+            <div class="stat-card received"><span class="stat-label">মোট জমা (Cash In)</span><span class="stat-value" id="totalReceived">₹ 0.00</span></div>
+            <div class="stat-card payment"><span class="stat-label">মোট খরচ (Cash Out)</span><span class="stat-value" id="totalPayment">₹ 0.00</span></div>
+            <div class="stat-card balance"><span class="stat-label">নিট ক্যাশ হাতে</span><span class="stat-value" id="totalCash">₹ 0.00</span></div>
+            <div class="stat-card due"><span class="stat-label">মোট নিট বাকি</span><span class="stat-value" id="netDue">₹ 0.00</span></div>
         </div>
 
         <div class="download-sec">
@@ -111,15 +114,13 @@
         </div>
 
         <h3 style="padding: 0 15px; font-size: 16px; color: #555;">Live Activity List:</h3>
-        <div class="product-list" id="productContainer">
-            </div>
+        <div class="product-list" id="productContainer"></div>
 
     </div>
 
     <script>
         let currentUser = null;
 
-        // --- Persistent Login Check ---
         window.onload = function() {
             const savedUser = localStorage.getItem('bmd_user');
             if (savedUser) {
@@ -163,60 +164,74 @@
         }
 
         async function fetchDashboardData() {
-            const { data: trans } = await supabaseClient.from('transactions').select('*').order('created_at', { ascending: false });
-            const { data: pays } = await supabaseClient.from('payments').select('*').order('created_at', { ascending: false });
+            // ১. ক্রয় (received_products) - এখানে আপনি সাপ্লায়ারকে টাকা দিচ্ছেন
+            const { data: buys } = await supabaseClient.from('received_products').select('*').eq('supplier_name', currentUser.name);
+            
+            // ২. বিক্রয় (transactions) - এখানে কাস্টমার আপনাকে টাকা দিচ্ছে
+            const { data: sells } = await supabaseClient.from('transactions').select('*').eq('party_name', currentUser.name);
+            
+            // ৩. পেমেন্ট রেকর্ডস (payments)
+            const { data: pays } = await supabaseClient.from('payments').select('*').eq('acc_name', currentUser.name).order('created_at', { ascending: false });
 
-            let cashIn = 0, cashOut = 0, totalDue = 0;
+            let totalIn = 0;   // কত টাকা পেলাম
+            let totalOut = 0;  // কত টাকা দিলাম
+            let totalBillDue = 0; // বিল অনুযায়ী বাকি
             let combinedHtml = '';
 
-            // 1. Process Product Transactions
-            if(trans) {
-                trans.forEach((item, index) => {
-                    cashIn += parseFloat(item.paid_amount || 0);
-                    totalDue += parseFloat(item.due_amount || 0);
+            // বিক্রয় প্রসেস (কাস্টমার থেকে টাকা ইনকাম)
+            sells?.forEach((item) => {
+                totalIn += parseFloat(item.paid_amount || 0);
+                totalBillDue += parseFloat(item.due_amount || 0);
+                combinedHtml += createActivityBox('SELL', item);
+            });
 
-                    combinedHtml += `
-                    <div class="product-item">
-                        <h5><i class="fas fa-box"></i> Product Received #${index + 1}</h5>
-                        <button class="print-btn-sm" onclick="printInvoice(${JSON.stringify(item).replace(/"/g, '&quot;')})">Print</button>
-                        <div class="prod-detail">
-                            <span>Qty: <b>${item.quantity}</b></span>
-                            <span>Date: <b>${new Date(item.created_at).toLocaleDateString()}</b></span>
-                            <span>Total: <b>₹${item.total_price}</b></span>
-                            <span>Paid: <b style="color:green;">₹${item.paid_amount}</b></span>
-                            <span style="grid-column: span 2;">Due: <b style="color:red;">₹${item.due_amount}</b></span>
-                        </div>
-                    </div>`;
-                });
-            }
+            // ক্রয় প্রসেস (সাপ্লায়ারকে টাকা প্রদান)
+            buys?.forEach((item) => {
+                totalOut += parseFloat(item.paid_amount || 0);
+                totalBillDue += parseFloat(item.due_amount || 0);
+                combinedHtml += createActivityBox('BUY', item);
+            });
 
-            // 2. Process Online Payments (Live View)
-            if(pays) {
-                pays.forEach((p) => {
-                    let typeColor = p.payment_type === 'took' ? 'green' : 'red';
-                    let typeText = p.payment_type === 'took' ? 'Cash In (Recv)' : 'Cash Out (Paid)';
-                    
-                    if(p.payment_type === 'took') cashIn += parseFloat(p.amount || 0);
-                    if(p.payment_type === 'gave') cashOut += parseFloat(p.amount || 0);
+            // পেমেন্ট এন্ট্রি প্রসেস
+            pays?.forEach((p) => {
+                const amt = parseFloat(p.amount || 0);
+                if(p.status === 'Received') totalIn += amt;
+                else if(p.status === 'Payout') totalOut += amt;
 
-                    combinedHtml += `
+                combinedHtml += `
                     <div class="product-item payment-box">
-                        <h5 style="color: #9b59b6;"><i class="fas fa-money-bill-wave"></i> Payment Update</h5>
+                        <h5 style="color: #9b59b6;"><i class="fas fa-money-bill-wave"></i> Payment Entry: ${p.status}</h5>
                         <div class="prod-detail">
-                            <span>Type: <b style="color:${typeColor};">${typeText}</b></span>
-                            <span>Date: <b>${new Date(p.created_at).toLocaleDateString()}</b></span>
-                            <span style="grid-column: span 2;">Amount: <b style="font-size:14px;">₹${p.amount}</b></span>
-                            <span style="grid-column: span 2; font-style: italic; color: #888;">Note: ${p.note || 'Online Payment'}</span>
+                            <span>Mode: <b>${p.mode}</b></span>
+                            <span>Date: <b>${new Date(p.payment_date).toLocaleDateString()}</b></span>
+                            <span style="grid-column: span 2;">Amount: <b style="font-size:14px; color:${p.status==='Received'?'green':'red'}">₹${amt}</b></span>
+                            <span style="grid-column: span 2; font-style: italic; color: #888;">Current Bal: ₹${p.balance}</span>
                         </div>
                     </div>`;
-                });
-            }
+            });
 
-            document.getElementById('productContainer').innerHTML = combinedHtml;
-            document.getElementById('totalReceived').innerText = "₹ " + cashIn.toLocaleString('en-IN');
-            document.getElementById('totalPayment').innerText = "₹ " + cashOut.toLocaleString('en-IN');
-            document.getElementById('totalPrice').innerText = "₹ " + (cashIn - cashOut).toLocaleString('en-IN');
-            document.getElementById('paymentStatus').innerText = "₹ " + (totalDue - cashOut).toLocaleString('en-IN');
+            document.getElementById('productContainer').innerHTML = combinedHtml || '<p style="text-align:center; color:grey;">No activity found.</p>';
+            
+            // কার্ডে হিসাব প্রদর্শন
+            document.getElementById('totalReceived').innerText = "₹ " + totalIn.toLocaleString('en-IN');
+            document.getElementById('totalPayment').innerText = "₹ " + totalOut.toLocaleString('en-IN');
+            document.getElementById('totalCash').innerText = "₹ " + (totalIn - totalOut).toLocaleString('en-IN');
+            document.getElementById('netDue').innerText = "₹ " + (totalBillDue).toLocaleString('en-IN');
+        }
+
+        function createActivityBox(type, item) {
+            return `
+                <div class="product-item">
+                    <h5><i class="fas fa-box"></i> ${type}: ${item.product_name}</h5>
+                    <button class="print-btn-sm" onclick='printInvoice(${JSON.stringify(item)})'>Print</button>
+                    <div class="prod-detail">
+                        <span>Qty: <b>${item.quantity || 0}</b></span>
+                        <span>Date: <b>${new Date(item.created_at).toLocaleDateString()}</b></span>
+                        <span>Total: <b>₹${item.total_price || 0}</b></span>
+                        <span>Paid: <b style="color:green;">₹${item.paid_amount || 0}</b></span>
+                        <span style="grid-column: span 2;">Due: <b style="color:red;">₹${item.due_amount || 0}</b></span>
+                    </div>
+                </div>`;
         }
 
         function printInvoice(item) {
@@ -224,21 +239,16 @@
             printWin.document.write(`
                 <html>
                 <head><title>Invoice</title></head>
-                <body style="font-family: sans-serif; padding: 40px;">
-                    <h1 style="text-align:center;">INVOICE</h1>
-                    <div style="margin-bottom:20px;">
-                        <strong>Seller:</strong> ${currentUser.name}<br>
-                        <strong>Address:</strong> ${currentUser.address}, ${currentUser.state}<br>
-                        <strong>Mobile:</strong> ${currentUser.mobile}
-                    </div>
-                    <table border="1" style="width:100%; border-collapse:collapse; text-align:center;">
-                        <tr><th>Description</th><th>Qty</th><th>Price</th><th>Paid</th><th>Due</th></tr>
-                        <tr><td>Product Order</td><td>${item.quantity}</td><td>₹${item.total_price}</td><td>₹${item.paid_amount}</td><td>₹${item.due_amount}</td></tr>
+                <body style="font-family: sans-serif; padding: 30px; border: 1px solid #eee;">
+                    <h2 style="text-align:center;">BMD BUSINESS INVOICE</h2>
+                    <hr>
+                    <p><strong>Name:</strong> ${currentUser.name}</p>
+                    <p><strong>Date:</strong> ${new Date(item.created_at).toLocaleDateString()}</p>
+                    <table border="1" style="width:100%; border-collapse:collapse; margin-top:20px; text-align:center;">
+                        <tr style="background:#f4f4f4;"><th>Product</th><th>Qty</th><th>Total</th><th>Paid</th><th>Due</th></tr>
+                        <tr><td>${item.product_name}</td><td>${item.quantity}</td><td>₹${item.total_price}</td><td>₹${item.paid_amount}</td><td>₹${item.due_amount}</td></tr>
                     </table>
-                    <div style="margin-top:50px; display:flex; justify-content:space-between;">
-                        <p>___________________<br>Supplier Signature</p>
-                        <p>___________________<br>Seller Signature</p>
-                    </div>
+                    <p style="margin-top:30px; text-align:right;">Authorized Signature: ________________</p>
                 </body>
                 </html>
             `);
@@ -251,7 +261,7 @@
         }
 
         function downloadStatement() {
-            alert("Statement generation started for the selected dates...");
+            alert("This feature will generate a PDF of all transactions in your selected date range.");
         }
     </script>
 </body>
