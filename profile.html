@@ -11,13 +11,11 @@
         :root { --primary: #10b981; --secondary: #3b82f6; --danger: #ef4444; --dark: #0f172a; --bg: #f8fafc; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding-bottom: 30px; transition: 0.3s; }
         
-        /* Layout Modes */
         .container { max-width: 100%; margin: 0 auto; transition: 0.4s; }
         @media (min-width: 1024px) { .desktop-mode { max-width: 1100px !important; } }
 
         .top-nav { background: var(--dark); color: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000; }
         
-        /* Top Dashboard - 4 Boxes */
         .dashboard { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 15px; }
         @media (min-width: 768px) { .dashboard { grid-template-columns: repeat(4, 1fr); } }
         
@@ -29,47 +27,44 @@
         .nav-link { text-align: center; color: var(--dark); text-decoration: none; font-size: 10px; font-weight: 700; cursor: pointer; flex: 1; }
         .nav-link i { font-size: 18px; display: block; margin-bottom: 4px; color: var(--secondary); }
 
-        /* Table & Ledger */
         .table-section { background: white; margin: 0 15px; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .table-header { padding: 15px; background: #f1f5f9; display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 14px; }
         .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 600px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 700px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f1f5f9; }
         th { background: #f8fafc; color: #64748b; }
 
-        .status-badge { padding: 2px 8px; border-radius: 5px; font-size: 10px; font-weight: bold; }
+        .status-badge { padding: 2px 8px; border-radius: 5px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
         .buy { background: #fee2e2; color: #ef4444; }
         .sell { background: #dcfce7; color: #10b981; }
 
-        /* Print Modal */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center; }
         .modal-content { background: white; padding: 25px; border-radius: 20px; width: 320px; text-align: center; }
         .print-btn { display: block; width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
 
-        /* PRINT STYLES */
         @media print {
             .no-print { display: none !important; }
             body { background: white; padding: 0; margin: 0; }
             .table-section { box-shadow: none; border: 1px solid #eee; margin: 0; width: 100%; }
-            table { font-size: 10px; }
+            table { font-size: 10px; min-width: 100%; }
         }
     </style>
 </head>
 <body id="mainBody">
 
 <div class="top-nav no-print">
-    <div onclick="history.back()"><i class="fas fa-arrow-left"></i></div>
+    <div onclick="history.back()" style="cursor:pointer"><i class="fas fa-arrow-left"></i></div>
     <h3 id="accDisplayName" style="margin:0; font-size:16px;">Loading...</h3>
     <div style="display:flex; gap:15px;">
-        <i class="fas fa-desktop" onclick="document.getElementById('mainBody').classList.toggle('desktop-mode')"></i>
-        <i class="fas fa-sync-alt" onclick="location.reload()"></i>
+        <i class="fas fa-desktop" onclick="document.getElementById('mainBody').classList.toggle('desktop-mode')" style="cursor:pointer"></i>
+        <i class="fas fa-sync-alt" onclick="location.reload()" style="cursor:pointer"></i>
     </div>
 </div>
 
 <div class="container" id="contentContainer">
     <div class="dashboard no-print">
         <div class="stat-box">
-            <small>Total Qty (Rec/Sell)</small>
+            <small>Total Qty</small>
             <h2 id="boxQty">0</h2>
         </div>
         <div class="stat-box">
@@ -110,15 +105,17 @@
                 <thead>
                     <tr>
                         <th>Date</th>
-                        <th>Product / Status</th>
+                        <th>Type/Product</th>
                         <th>Qty</th>
-                        <th>Total Amt</th>
+                        <th>Amount</th>
                         <th>Paid</th>
                         <th>Balance</th>
                         <th class="no-print">Action</th>
                     </tr>
                 </thead>
-                <tbody id="masterTableBody"></tbody>
+                <tbody id="masterTableBody">
+                    <tr><td colspan="7" style="text-align:center">Loading transactions...</td></tr>
+                </tbody>
             </table>
         </div>
     </div>
@@ -139,83 +136,123 @@
     const accName = urlParams.get('name');
 
     async function loadData() {
-        if(!accName) return;
+        if(!accName) {
+            alert("No account name found!");
+            return;
+        }
+        
         document.getElementById('accDisplayName').innerText = accName;
         document.getElementById('printAccName').innerText = accName;
 
-        // Fetch Data from 3 tables: Received, Sell, and Payments
-        const { data: recData } = await supabaseClient.from('received_products').select('*').eq('supplier_name', accName);
-        const { data: sellData } = await supabaseClient.from('sell_products').select('*').eq('customer_name', accName);
-        const { data: pays } = await supabaseClient.from('payments').select('*').eq('acc_name', accName).order('payment_date', {ascending: false});
+        try {
+            // Fetching all related data
+            const [recRes, sellRes, payRes] = await Promise.all([
+                supabaseClient.from('received_products').select('*').eq('supplier_name', accName),
+                supabaseClient.from('sell_products').select('*').eq('customer_name', accName),
+                supabaseClient.from('payments').select('*').eq('acc_name', accName)
+            ]);
 
-        const tbody = document.getElementById('masterTableBody');
-        tbody.innerHTML = "";
-        
-        let totalQty = 0;
-        let totalVal = 0;
-        let totalPaid = 0;
-        let combinedLedger = [];
+            const recData = recRes.data || [];
+            const sellData = sellRes.data || [];
+            const pays = payRes.data || [];
 
-        // 1. Process Received Products
-        recData?.forEach(item => {
-            totalQty += parseFloat(item.quantity || 0);
-            totalVal += parseFloat(item.total_price || 0);
-            combinedLedger.push({...item, type: 'Buy', date: item.created_at});
-        });
+            let totalQty = 0;
+            let totalVal = 0;
+            let totalPaid = 0;
+            let combinedLedger = [];
 
-        // 2. Process Sell Products (Fix: Now added to calculation)
-        sellData?.forEach(item => {
-            totalQty += parseFloat(item.quantity || 0);
-            totalVal += parseFloat(item.total_price || 0);
-            combinedLedger.push({...item, type: 'Sell', date: item.created_at});
-        });
+            // 1. Process Received Products
+            recData.forEach(item => {
+                const qty = parseFloat(item.quantity || 0);
+                const price = parseFloat(item.total_price || 0);
+                totalQty += qty;
+                totalVal += price;
+                combinedLedger.push({
+                    date: item.created_at,
+                    type: 'Buy',
+                    desc: item.product_name,
+                    qty: qty + ' ' + (item.unit || ''),
+                    amt: price,
+                    paid: '-',
+                    bal: '-'
+                });
+            });
 
-        // 3. Process Payments
-        pays?.forEach(p => {
-            totalPaid += parseFloat(p.amount || 0);
-            combinedLedger.push({...p, type: 'Payment', date: p.payment_date});
-        });
+            // 2. Process Sell Products
+            sellData.forEach(item => {
+                const qty = parseFloat(item.quantity || 0);
+                const price = parseFloat(item.total_price || 0);
+                totalQty += qty;
+                totalVal += price;
+                combinedLedger.push({
+                    date: item.created_at,
+                    type: 'Sell',
+                    desc: item.product_name,
+                    qty: qty + ' ' + (item.unit || ''),
+                    amt: price,
+                    paid: '-',
+                    bal: '-'
+                });
+            });
 
-        // Sort by date
-        combinedLedger.sort((a, b) => new Date(b.date) - new Date(a.date));
+            // 3. Process Payments
+            pays.forEach(p => {
+                const amt = parseFloat(p.amount || 0);
+                totalPaid += amt;
+                combinedLedger.push({
+                    date: p.payment_date,
+                    type: 'Payment',
+                    desc: 'Paid via ' + (p.mode || 'Cash'),
+                    qty: '-',
+                    amt: '-',
+                    paid: amt,
+                    bal: p.balance || '-'
+                });
+            });
 
-        // Render Table
-        combinedLedger.forEach(row => {
-            let rowHtml = '';
-            if(row.type === 'Buy' || row.type === 'Sell') {
-                rowHtml = `
-                    <tr>
-                        <td>${row.date.split('T')[0]}</td>
-                        <td><span class="status-badge ${row.type.toLowerCase()}">${row.type}</span> <b>${row.product_name}</b></td>
-                        <td>${row.quantity} ${row.unit || ''}</td>
-                        <td>₹${row.total_price}</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td class="no-print"><i class="fas fa-trash" style="color:var(--danger)"></i></td>
-                    </tr>`;
+            // Sort by Date (Newest first)
+            combinedLedger.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // Render to Table
+            const tbody = document.getElementById('masterTableBody');
+            tbody.innerHTML = "";
+
+            if (combinedLedger.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No transactions found.</td></tr>';
             } else {
-                rowHtml = `
-                    <tr style="background:#f0fdf4">
-                        <td>${row.date}</td>
-                        <td><i class="fas fa-check-circle" style="color:var(--primary)"></i> <b>Payment (${row.mode})</b></td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td style="font-weight:800; color:var(--primary)">₹${row.amount}</td>
-                        <td>₹${row.balance || ''}</td>
-                        <td class="no-print"><i class="fas fa-print"></i></td>
-                    </tr>`;
+                combinedLedger.forEach(row => {
+                    const isPayment = row.type === 'Payment';
+                    tbody.innerHTML += `
+                        <tr style="${isPayment ? 'background:#f0fdf4' : ''}">
+                            <td>${row.date.includes('T') ? row.date.split('T')[0] : row.date}</td>
+                            <td>
+                                ${isPayment ? '<i class="fas fa-check-circle text-green-500"></i>' : 
+                                  `<span class="status-badge ${row.type.toLowerCase()}">${row.type}</span>`} 
+                                <b>${row.desc}</b>
+                            </td>
+                            <td>${row.qty}</td>
+                            <td>${row.amt !== '-' ? '₹' + row.amt : '-'}</td>
+                            <td style="font-weight:bold; color:var(--primary)">${row.paid !== '-' ? '₹' + row.paid : '-'}</td>
+                            <td>${row.bal !== '-' ? '₹' + row.bal : '-'}</td>
+                            <td class="no-print">
+                                <i class="fas fa-trash-alt" style="color:var(--danger); cursor:pointer"></i>
+                            </td>
+                        </tr>`;
+                });
             }
-            tbody.innerHTML += rowHtml;
-        });
 
-        // Update Dashboard Boxes
-        document.getElementById('boxQty').innerText = totalQty;
-        document.getElementById('boxVal').innerText = "₹ " + totalVal.toLocaleString();
-        document.getElementById('boxDue').innerText = "₹ " + (totalVal - totalPaid).toLocaleString();
-        document.getElementById('boxLastPay').innerText = "₹ " + (pays && pays[0] ? pays[0].amount : 0);
+            // Update UI
+            document.getElementById('boxQty').innerText = totalQty;
+            document.getElementById('boxVal').innerText = "₹ " + totalVal.toLocaleString();
+            document.getElementById('boxDue').innerText = "₹ " + (totalVal - totalPaid).toLocaleString();
+            document.getElementById('boxLastPay').innerText = "₹ " + (pays.length > 0 ? pays[0].amount : 0);
+
+        } catch (err) {
+            console.error("Load Error:", err);
+            document.getElementById('masterTableBody').innerHTML = '<tr><td colspan="7" style="color:red; text-align:center">Error loading data.</td></tr>';
+        }
     }
 
-    // Print Logic
     function openPrintModal() { document.getElementById('printModal').style.display = 'flex'; }
     function closePrintModal() { document.getElementById('printModal').style.display = 'none'; }
 
@@ -226,9 +263,11 @@
             thermalStyle.id = "thermal-css";
             thermalStyle.innerHTML = `
                 @page { size: 4in 6in; margin: 0; }
-                body { width: 4in; padding: 10px; }
-                table { font-size: 9px !important; }
-                .table-header { font-size: 12px !important; text-align: center; }
+                body { width: 4in; padding: 10px; background: white; }
+                .table-section { margin: 0; border: none; }
+                table { font-size: 10px !important; min-width: 100%; }
+                th, td { padding: 5px; }
+                .table-header { font-size: 12px !important; text-align: center; margin-bottom: 10px; }
             `;
             document.head.appendChild(thermalStyle);
             window.print();
