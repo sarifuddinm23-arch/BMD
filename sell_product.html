@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sell Product - BMD</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary: #e67e22; --dark: #1a1a1a; --bg: #f4f7f6; --white: #fff; --success: #27ae60; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 30px; }
+        
+        .top-bar { background: var(--dark); color: white; padding: 15px 20px; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; z-index: 1000; }
+        .container { width: 95%; max-width: 500px; margin: 20px auto; }
+
+        .form-card { background: var(--white); border-radius: 20px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 12px; font-weight: bold; color: #555; margin-bottom: 5px; text-transform: uppercase; }
+        
+        input, select { width: 100%; padding: 12px; border: 1.5px solid #eee; border-radius: 10px; box-sizing: border-box; font-size: 14px; transition: 0.3s; }
+        input:focus { border-color: var(--primary); outline: none; background: #fffdfa; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
+        /* Summary Box */
+        .total-box { background: #fff9f4; border: 1px dashed var(--primary); border-radius: 12px; padding: 15px; margin-top: 10px; text-align: center; }
+        .total-box h2 { margin: 0; color: var(--primary); font-size: 24px; }
+        .total-box small { color: #888; }
+
+        .btn-sell { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 20px; box-shadow: 0 5px 15px rgba(230, 126, 34, 0.3); }
+        .btn-sell:active { transform: scale(0.98); }
+
+        /* Stock Indicator */
+        .stock-badge { display: inline-block; padding: 3px 8px; border-radius: 5px; font-size: 11px; background: #eee; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <i class="fas fa-arrow-left" onclick="history.back()" style="cursor:pointer;"></i>
+    <span style="font-weight: bold;">SELL PRODUCT</span>
+</div>
+
+<div class="container">
+    <div class="form-card">
+        <div class="form-group">
+            <label>Product Name</label>
+            <select id="p_name" onchange="updateUnit()">
+                <option value="">-- Select Product --</option>
+                </select>
+        </div>
+
+        <div class="grid-2">
+            <div class="form-group">
+                <label>Sell Quantity</label>
+                <input type="number" id="qty" placeholder="0.00" oninput="calculateSell()">
+            </div>
+            <div class="form-group">
+                <label>Unit Name</label>
+                <select id="unit">
+                    <option>PICS</option>
+                    <option>LITER</option>
+                    <option>KG</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Price Per Unit</label>
+            <input type="number" id="rate" placeholder="₹ 0.00" oninput="calculateSell()">
+        </div>
+
+        <div class="total-box">
+            <small>Total Bill Amount</small>
+            <h2 id="displayTotal">₹ 0.00</h2>
+        </div>
+
+        <div class="form-group" style="margin-top: 20px;">
+            <label>Customer Paid (Cash)</label>
+            <input type="number" id="paid" placeholder="₹ 0.00" oninput="calculateSell()">
+        </div>
+
+        <div id="dueInfo" style="font-size: 13px; color: var(--danger); font-weight: bold; text-align: right;">
+            Due: ₹ 0.00
+        </div>
+
+        <button class="btn-sell" onclick="processSell()">
+            <i class="fas fa-check-circle"></i> CONFIRM SELL & ENTER
+        </button>
+    </div>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('id'); // Profile theke id ashbe
+
+    // ১. ডাটাবেস থেকে প্রোডাক্ট লিস্ট ড্রপডাউনে আনা
+    async function loadProducts() {
+        const { data, error } = await supabaseClient.from('product_list').select('name');
+        const select = document.getElementById('p_name');
+        if (data) {
+            data.forEach(p => {
+                let opt = document.createElement('option');
+                opt.value = p.name;
+                opt.innerHTML = p.name;
+                select.appendChild(opt);
+            });
+        }
+    }
+
+    // ২. অটো ক্যালকুলেশন
+    function calculateSell() {
+        const qty = parseFloat(document.getElementById('qty').value) || 0;
+        const rate = parseFloat(document.getElementById('rate').value) || 0;
+        const paid = parseFloat(document.getElementById('paid').value) || 0;
+        
+        const total = qty * rate;
+        const due = total - paid;
+
+        document.getElementById('displayTotal').innerText = "₹ " + total.toFixed(2);
+        document.getElementById('dueInfo').innerText = "Due: ₹ " + due.toFixed(2);
+        
+        return { total, due, paid };
+    }
+
+    // ৩. সেল প্রসেস করা
+    async function processSell() {
+        const btn = document.querySelector('.btn-sell');
+        const { total, due, paid } = calculateSell();
+        const pName = document.getElementById('p_name').value;
+        const qty = document.getElementById('qty').value;
+
+        if(!userId) return alert("Error: No Customer ID found!");
+        if(!pName || !qty || qty <= 0) return alert("Please select product and quantity!");
+
+        btn.disabled = true;
+        btn.innerHTML = "Processing...";
+
+        const payload = {
+            party_id: userId,
+            product_name: pName,
+            qty: parseFloat(qty),
+            unit: document.getElementById('unit').value,
+            rate: parseFloat(document.getElementById('rate').value),
+            net_total: total,
+            paid_amount: paid,
+            due_amount: due,
+            mother_category: 'sell', // Identifying this as a sell
+            created_at: new Date()
+        };
+
+        const { error } = await supabaseClient.from('transactions').insert([payload]);
+
+        if (error) {
+            alert("DB Error: " + error.message);
+            btn.disabled = false;
+            btn.innerHTML = "CONFIRM SELL & ENTER";
+        } else {
+            alert("Sell Recorded Successfully! ✅");
+            window.location.href = `profile.html?id=${userId}`;
+        }
+    }
+
+    window.onload = loadProducts;
+</script>
+
+</body>
+</html>
