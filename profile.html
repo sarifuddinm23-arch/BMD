@@ -45,7 +45,7 @@
     <div onclick="history.back()" style="cursor:pointer; padding: 5px;"><i class="fas fa-arrow-left"></i></div>
     <div class="user-info">
         <h3 id="accDisplayName">Loading...</h3>
-        <small id="authStatus" style="opacity: 0.8;">Secured Session</small>
+        <small id="authStatus" style="opacity: 0.8;">Secured Connection</small>
     </div>
     <i class="fas fa-sync" onclick="loadAllData()" style="cursor:pointer; padding: 5px;"></i>
 </div>
@@ -58,7 +58,7 @@
 
 <div id="chatContainer">
     <div style="text-align:center; padding-top:50px; color:#666;">
-        <i class="fas fa-circle-notch fa-spin"></i> Loading Data...
+        <i class="fas fa-circle-notch fa-spin"></i> Loading Profile Data...
     </div>
 </div>
 
@@ -70,7 +70,7 @@
         <i class="fas fa-truck-loading"></i> PURCHASE
     </button>
     <button class="act-btn" style="background:var(--primary)" onclick="location.href='payments.html?name='+encodeURIComponent(accName)">
-        <i class="fas fa-wallet"></i> PAYMENT (IN)
+        <i class="fas fa-money-bill-wave"></i> PAYMENT (IN)
     </button>
 </div>
 
@@ -79,32 +79,29 @@
     const accName = urlParams.get('name');
 
     async function loadAllData() {
-        // ১. লগইন চেক
         const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) {
-            window.location.href = "login.html"; 
-            return;
-        }
+        if (!session) { window.location.href = "login.html"; return; }
 
         if(!accName) return;
         document.getElementById('accDisplayName').innerText = accName;
         const container = document.getElementById('chatContainer');
 
         try {
-            // ২. তিনটি টেবিল থেকে ডেটা ফেচ করা (আপনার SQL অনুযায়ী কলামের নাম সেট করা হয়েছে)
+            // ১. আপনার SQL অনুযায়ী ফিল্টারিং এবং ফেচিং
             const [payRes, recRes, trxRes] = await Promise.all([
                 supabaseClient.from('payments').select('*').eq('acc_name', accName),
                 supabaseClient.from('received_products').select('*').eq('supplier_name', accName),
+                // Transactions টেবিলে 'party_name' কলামটি আপনার SQL ফাইলে আছে, তাই সেটি ব্যবহার করা হয়েছে
                 supabaseClient.from('transactions').select('*').or(`party_name.eq."${accName}",acc_name.eq."${accName}"`)
             ]);
 
             let combinedData = [];
 
-            // ৩. Payments Table (Inflow)
+            // ২. Payments Table (Inflow)
             if(payRes.data) payRes.data.forEach(d => {
                 combinedData.push({
                     date: d.payment_date || d.created_at,
-                    type: d.status || 'Payment',
+                    type: d.status || 'Payment Received',
                     note: `Mode: ${d.mode || 'Cash'}`,
                     amt: parseFloat(d.amount || 0),
                     balance: d.balance || 0,
@@ -112,42 +109,41 @@
                 });
             });
 
-            // ৪. Received Products Table (Purchase - Outflow)
+            // ৩. Received Products (Outflow/Purchase)
             if(recRes.data) recRes.data.forEach(d => {
                 combinedData.push({
                     date: d.created_at,
                     type: 'Purchase',
-                    note: `${d.product_name} (${d.quantity} ${d.unit || ''})`,
+                    note: `${d.product_name || 'Goods'} (${d.quantity || 0} ${d.unit || ''})`,
                     amt: parseFloat(d.total_price || 0),
                     balance: d.due_amount || 0,
                     flow: 'out'
                 });
             });
 
-            // ৫. Transactions Table (Sell/Out - Outflow)
+            // ৪. Transactions Table (Sell Out Data - 100% Fixed)
             if(trxRes.data) trxRes.data.forEach(d => {
-                // আপনার SQL অনুযায়ী এখানে 'type' কলাম চেক করা হচ্ছে
                 const typeVal = (d.type || '').toLowerCase();
+                // Sell বা Out থাকলে লাল রঙ (Outflow) হিসেবে ধরবে
                 const isOutflow = typeVal.includes('sell') || typeVal.includes('out');
                 
                 combinedData.push({
                     date: d.created_at,
                     type: d.type || 'Sell Entry',
-                    note: d.product_name || d.description || 'Goods Out',
+                    note: d.product_name || d.description || 'Goods Sold',
                     amt: parseFloat(d.total_price || d.amount || 0),
                     balance: d.due_amount || d.balance || 0,
                     flow: isOutflow ? 'out' : 'in'
                 });
             });
 
-            // ৬. তারিখ অনুযায়ী ডেটা সর্টিং
+            // ৫. সর্টিং এবং রেন্ডারিং
             combinedData.sort((a, b) => new Date(a.date) - new Date(b.date));
-
             container.innerHTML = "";
             let tBill = 0, tPaid = 0;
 
             if (combinedData.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding-top:50px; color:#888;">No history found.</div>';
+                container.innerHTML = '<div style="text-align:center; padding-top:50px; color:#888;">No transactions found for this profile.</div>';
             }
 
             combinedData.forEach(item => {
@@ -157,12 +153,12 @@
 
                 container.innerHTML += `
                     <div class="msg ${isOut ? 'out' : 'in'}">
-                        <span class="msg-date">${new Date(item.date).toLocaleDateString('en-IN')}</span>
+                        <span class="msg-date">${new Date(item.date).toLocaleDateString()}</span>
                         <div class="msg-header">
                             <span>${item.type}</span>
                             <span style="color:#666">Bal: ₹${(item.balance || 0).toLocaleString()}</span>
                         </div>
-                        <div style="font-weight:600; color:#333;">${item.note}</div>
+                        <div style="font-weight:600;">${item.note}</div>
                         <span class="amt ${isOut ? 'red' : 'green'}">
                             ${isOut ? '↑' : '↓'} ₹${item.amt.toLocaleString('en-IN')}
                         </span>
@@ -178,7 +174,7 @@
 
         } catch (err) {
             console.error(err);
-            container.innerHTML = `<div style="color:red; text-align:center; padding:20px;">Load Error.</div>`;
+            container.innerHTML = `<div style="color:red; text-align:center; padding:20px;">Data Fetch Error.</div>`;
         }
     }
 
