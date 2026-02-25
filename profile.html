@@ -11,29 +11,35 @@
         :root { --primary: #10b981; --secondary: #3b82f6; --danger: #ef4444; --dark: #075e54; --bg: #e5ddd5; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
+        /* Header */
         .top-nav { background: var(--dark); color: white; padding: 12px 15px; display: flex; align-items: center; gap: 15px; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         .user-info { flex-grow: 1; }
         .user-info h3 { margin: 0; font-size: 16px; }
         
+        /* Summary Dashboard */
         .dashboard-row { background: white; display: flex; justify-content: space-around; padding: 10px; border-bottom: 1px solid #ccc; font-size: 12px; }
         .stat-item { text-align: center; flex: 1; border-right: 1px solid #eee; }
         .stat-item:last-child { border-right: none; }
         .stat-item b { display: block; font-size: 14px; color: #333; }
 
+        /* Chat Container */
         #chatContainer { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
         
-        .msg { max-width: 82%; padding: 10px; border-radius: 10px; position: relative; font-size: 13px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .msg.out { align-self: flex-end; background: #dcf8c6; border-right: 4px solid var(--danger); } 
-        .msg.in { align-self: flex-start; background: white; border-left: 4px solid var(--primary); }
+        /* Chat Bubbles */
+        .msg { max-width: 85%; padding: 10px; border-radius: 12px; position: relative; font-size: 13px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); line-height: 1.4; }
+        .msg.out { align-self: flex-end; background: #dcf8c6; border-right: 4px solid var(--danger); border-top-right-radius: 2px; } 
+        .msg.in { align-self: flex-start; background: white; border-left: 4px solid var(--primary); border-top-left-radius: 2px; }
 
         .msg-date { font-size: 9px; color: #888; margin-bottom: 4px; display: block; }
-        .msg-header { font-weight: 800; font-size: 10px; text-transform: uppercase; display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .amt { font-size: 17px; font-weight: 900; display: block; margin: 4px 0; }
+        .msg-header { font-weight: 800; font-size: 10px; text-transform: uppercase; display: flex; justify-content: space-between; margin-bottom: 5px; gap: 10px; }
+        .amt { font-size: 16px; font-weight: 900; display: block; margin-top: 5px; }
         .red { color: var(--danger); }
         .green { color: var(--primary); }
         
-        .footer-actions { background: #f0f0f0; padding: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .act-btn { border: none; padding: 12px 5px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        /* Action Buttons */
+        .footer-actions { background: #f0f0f0; padding: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; border-top: 1px solid #ddd; }
+        .act-btn { border: none; padding: 12px 5px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 5px; transition: 0.2s; }
+        .act-btn:active { transform: scale(0.95); }
 
         @media print { .no-print { display: none !important; } body { background: white; } #chatContainer { overflow: visible; } }
     </style>
@@ -41,12 +47,12 @@
 <body>
 
 <div class="top-nav no-print">
-    <div onclick="history.back()" style="cursor:pointer"><i class="fas fa-arrow-left"></i></div>
+    <div onclick="history.back()" style="cursor:pointer; padding: 5px;"><i class="fas fa-arrow-left"></i></div>
     <div class="user-info">
         <h3 id="accDisplayName">Loading...</h3>
-        <small id="authStatus">Checking security...</small>
+        <small id="authStatus" style="opacity: 0.8;">Verifying access...</small>
     </div>
-    <i class="fas fa-sync" onclick="loadAllData()" style="cursor:pointer"></i>
+    <i class="fas fa-sync" onclick="loadAllData()" style="cursor:pointer; padding: 5px;"></i>
 </div>
 
 <div class="dashboard-row no-print">
@@ -57,19 +63,19 @@
 
 <div id="chatContainer">
     <div style="text-align:center; padding-top:50px; color:#666;">
-        <i class="fas fa-spinner fa-spin"></i> Loading transactions...
+        <i class="fas fa-circle-notch fa-spin"></i> Loading Ledger...
     </div>
 </div>
 
 <div class="footer-actions no-print">
     <button class="act-btn" style="background:var(--danger)" onclick="location.href='sell_product.html?name='+encodeURIComponent(accName)">
-        <i class="fas fa-arrow-up"></i> SELL (OUT)
+        <i class="fas fa-shopping-cart"></i> SELL (OUT)
     </button>
     <button class="act-btn" style="background:var(--secondary)" onclick="location.href='received_product.html?name='+encodeURIComponent(accName)">
-        <i class="fas fa-plus-circle"></i> PURCHASE
+        <i class="fas fa-truck-loading"></i> PURCHASE
     </button>
     <button class="act-btn" style="background:var(--primary)" onclick="location.href='payments.html?name='+encodeURIComponent(accName)">
-        <i class="fas fa-wallet"></i> PAYMENT (IN)
+        <i class="fas fa-money-bill-wave"></i> PAYMENT (IN)
     </button>
 </div>
 
@@ -78,21 +84,24 @@
     const accName = urlParams.get('name');
 
     async function loadAllData() {
-        // ১. লগইন চেক (Authenticated User Only)
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) {
-            alert("সেশন শেষ! দয়া করে ফোন নম্বর দিয়ে লগইন করুন।");
+        // ১. Auth Check (নিরাপত্তার জন্য)
+        const { data: { session }, error: authErr } = await supabaseClient.auth.getSession();
+        if (!session || authErr) {
+            alert("Security Alert: Please login first!");
             window.location.href = "login.html"; 
             return;
         }
         document.getElementById('authStatus').innerText = "Secured Connection";
 
-        if(!accName) return;
+        if(!accName) {
+            document.getElementById('chatContainer').innerHTML = "Account name missing!";
+            return;
+        }
         document.getElementById('accDisplayName').innerText = accName;
         const container = document.getElementById('chatContainer');
 
         try {
-            // ২. সকল টেবিল থেকে ডেটা ফেচ করা
+            // ২. ডেটা ফেচ করা (সব টেবিল থেকে)
             const [payRes, recRes, trxRes] = await Promise.all([
                 supabaseClient.from('payments').select('*').eq('acc_name', accName),
                 supabaseClient.from('received_products').select('*').eq('supplier_name', accName),
@@ -101,52 +110,55 @@
 
             let combinedData = [];
 
-            // ৩. ডেটা প্রসেসিং (Payments)
+            // ৩. পেমেন্ট প্রসেসিং (Inflow)
             if(payRes.data) payRes.data.forEach(d => {
                 combinedData.push({
                     date: d.payment_date || d.created_at,
                     type: d.status || 'Payment',
-                    note: `Mode: ${d.mode || 'Cash'}`,
+                    note: `Mode: ${d.mode || 'Cash'} ${d.reference ? '('+d.reference+')' : ''}`,
                     amt: parseFloat(d.amount || 0),
                     balance: d.balance || 0,
                     flow: 'in'
                 });
             });
 
-            // ৪. ডেটা প্রসেসিং (Purchase)
+            // ৪. পারচেজ প্রসেসিং (Outflow)
             if(recRes.data) recRes.data.forEach(d => {
                 combinedData.push({
                     date: d.created_at,
                     type: 'Purchase',
-                    note: `${d.product_name} (${d.quantity} ${d.unit || ''})`,
-                    amt: parseFloat(d.total_price || 0),
+                    note: `${d.product_name} | Qty: ${d.quantity || 0}`,
+                    amt: parseFloat(d.total_price || d.amount || 0),
                     balance: d.due_amount || 0,
                     flow: 'out'
                 });
             });
 
-            // ৫. ডেটা প্রসেসিং (Transactions)
+            // ৫. ট্রানজ্যাকশন/সেল প্রসেসিং (Dynamic)
             if(trxRes.data) trxRes.data.forEach(d => {
-                const typeLow = (d.type || '').toLowerCase();
-                const isSell = typeLow.includes('sell') || typeLow.includes('out');
+                const type = (d.type || '').toLowerCase();
+                // "sell" অথবা "out" থাকলে লাল রঙের (Outflow) বাবলে যাবে
+                const isSell = type.includes('sell') || type.includes('out') || type.includes('minus');
+                
                 combinedData.push({
                     date: d.created_at,
-                    type: d.type || 'Entry',
-                    note: d.product_name || d.description,
+                    type: d.type || 'Transaction',
+                    note: d.product_name || d.description || 'General Entry',
                     amt: parseFloat(d.total_price || d.amount || 0),
-                    balance: d.due_amount || d.due_balance || 0,
+                    balance: d.due_amount || d.balance || 0,
                     flow: isSell ? 'out' : 'in'
                 });
             });
 
-            // ৬. তারিখ অনুযায়ী সাজানো
+            // ৬. তারিখ অনুযায়ী ডেটা সাজানো
             combinedData.sort((a, b) => new Date(a.date) - new Date(b.date));
 
+            // ৭. রেন্ডারিং
             container.innerHTML = "";
             let tBill = 0, tPaid = 0;
 
             if (combinedData.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding-top:50px; color:#888;">No transactions found.</div>';
+                container.innerHTML = '<div style="text-align:center; margin-top:50px; color:#888;">No transactions found for '+accName+'</div>';
             }
 
             combinedData.forEach(item => {
@@ -154,28 +166,36 @@
                 if(isOut) tBill += item.amt;
                 else tPaid += item.amt;
 
+                const displayDate = new Date(item.date).toLocaleDateString('en-IN', {
+                    day: 'numeric', month: 'short', year: 'numeric'
+                });
+
                 container.innerHTML += `
                     <div class="msg ${isOut ? 'out' : 'in'}">
-                        <span class="msg-date">${new Date(item.date).toLocaleDateString()}</span>
+                        <span class="msg-date">${displayDate}</span>
                         <div class="msg-header">
                             <span>${item.type}</span>
-                            <span style="color:#888">Bal: ₹${item.balance}</span>
+                            <span style="color:#666">Bal: ₹${item.balance.toLocaleString()}</span>
                         </div>
-                        <div style="font-weight:600;">${item.note || '-'}</div>
-                        <span class="amt ${isOut ? 'red' : 'green'}">₹${item.amt.toLocaleString()}</span>
+                        <div style="font-weight:600; color:#333;">${item.note}</div>
+                        <span class="amt ${isOut ? 'red' : 'green'}">
+                            ${isOut ? '↑' : '↓'} ₹${item.amt.toLocaleString('en-IN')}
+                        </span>
                     </div>
                 `;
             });
 
-            document.getElementById('totalBill').innerText = "₹" + tBill.toLocaleString();
-            document.getElementById('totalPaid').innerText = "₹" + tPaid.toLocaleString();
-            document.getElementById('totalDue').innerText = "₹" + (tBill - tPaid).toLocaleString();
+            // ৮. ড্যাশবোর্ড আপডেট
+            document.getElementById('totalBill').innerText = "₹" + tBill.toLocaleString('en-IN');
+            document.getElementById('totalPaid').innerText = "₹" + tPaid.toLocaleString('en-IN');
+            document.getElementById('totalDue').innerText = "₹" + (tBill - tPaid).toLocaleString('en-IN');
             
+            // স্ক্রল নিচে নিয়ে যাওয়া
             container.scrollTop = container.scrollHeight;
 
         } catch (err) {
-            console.error(err);
-            container.innerHTML = `<div style="color:red; text-align:center; padding:20px;">Error: ${err.message}</div>`;
+            console.error("Ledger Error:", err);
+            container.innerHTML = `<div style="color:red; text-align:center; padding:20px;">Error loading data. Check console.</div>`;
         }
     }
 
