@@ -11,42 +11,48 @@
         :root { --primary: #10b981; --secondary: #3b82f6; --danger: #ef4444; --dark: #0f172a; --bg: #f8fafc; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding-bottom: 30px; transition: 0.3s; }
         
+        /* Layout Configuration */
         .container { max-width: 100%; margin: 0 auto; transition: 0.4s; }
-        @media (min-width: 1024px) { .desktop-mode { max-width: 1100px !important; } }
+        .desktop-mode { max-width: 1100px !important; margin: 0 auto; }
 
         .top-nav { background: var(--dark); color: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000; }
         
-        .dashboard { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 15px; }
+        /* Stats Dashboard */
+        .dashboard { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 15px; }
         @media (min-width: 768px) { .dashboard { grid-template-columns: repeat(4, 1fr); } }
         
         .stat-box { background: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; border-bottom: 4px solid #e2e8f0; }
         .stat-box small { font-size: 10px; font-weight: bold; color: #64748b; text-transform: uppercase; }
         .stat-box h2 { margin: 5px 0 0; font-size: 18px; color: var(--dark); font-weight: 800; }
 
+        /* Icon Navigation */
         .icon-nav { display: flex; justify-content: space-around; padding: 15px; background: white; margin: 0 15px 15px; border-radius: 16px; gap: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .nav-link { text-align: center; color: var(--dark); text-decoration: none; font-size: 10px; font-weight: 700; cursor: pointer; flex: 1; }
         .nav-link i { font-size: 18px; display: block; margin-bottom: 4px; color: var(--secondary); }
 
+        /* Ledger Table */
         .table-section { background: white; margin: 0 15px; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .table-header { padding: 15px; background: #f1f5f9; display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 14px; }
+        .table-header { padding: 15px; background: #f1f5f9; display: flex; justify-content: space-between; align-items: center; font-weight: 800; }
         .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 700px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f1f5f9; }
-        th { background: #f8fafc; color: #64748b; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 650px; }
+        th, td { padding: 14px 12px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+        th { background: #f8fafc; color: #64748b; font-weight: 600; }
 
-        .status-badge { padding: 2px 8px; border-radius: 5px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
-        .buy { background: #fee2e2; color: #ef4444; }
-        .sell { background: #dcfce7; color: #10b981; }
+        .status-badge { padding: 3px 8px; border-radius: 6px; font-size: 9px; font-weight: 900; text-transform: uppercase; }
+        .badge-buy { background: #fee2e2; color: #ef4444; }
+        .badge-sell { background: #dcfce7; color: #10b981; }
+        .badge-pay { background: #dbeafe; color: #3b82f6; }
 
+        /* Modal */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center; }
-        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 320px; text-align: center; }
-        .print-btn { display: block; width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .modal-content { background: white; padding: 25px; border-radius: 24px; width: 320px; text-align: center; }
+        .print-btn { display: block; width: 100%; padding: 14px; margin: 10px 0; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; }
 
         @media print {
             .no-print { display: none !important; }
-            body { background: white; padding: 0; margin: 0; }
-            .table-section { box-shadow: none; border: 1px solid #eee; margin: 0; width: 100%; }
-            table { font-size: 10px; min-width: 100%; }
+            body { background: white; margin: 0; padding: 0; }
+            .table-section { box-shadow: none; border: 1px solid #ddd; margin: 0; border-radius: 0; }
+            table { font-size: 10px; }
         }
     </style>
 </head>
@@ -54,9 +60,9 @@
 
 <div class="top-nav no-print">
     <div onclick="history.back()" style="cursor:pointer"><i class="fas fa-arrow-left"></i></div>
-    <h3 id="accDisplayName" style="margin:0; font-size:16px;">Loading...</h3>
+    <h3 id="accDisplayName" style="margin:0; font-size:16px;">Account Profile</h3>
     <div style="display:flex; gap:15px;">
-        <i class="fas fa-desktop" onclick="document.getElementById('mainBody').classList.toggle('desktop-mode')" style="cursor:pointer"></i>
+        <i class="fas fa-desktop" onclick="toggleDesktop()" style="cursor:pointer"></i>
         <i class="fas fa-sync-alt" onclick="location.reload()" style="cursor:pointer"></i>
     </div>
 </div>
@@ -68,53 +74,53 @@
             <h2 id="boxQty">0</h2>
         </div>
         <div class="stat-box">
-            <small>Total Price</small>
+            <small>Total Amount</small>
             <h2 id="boxVal">₹ 0</h2>
         </div>
         <div class="stat-box" style="border-bottom-color: var(--danger);">
-            <small>Due Balance</small>
+            <small>Net Balance</small>
             <h2 id="boxDue" style="color: var(--danger);">₹ 0</h2>
         </div>
         <div class="stat-box" style="border-bottom-color: var(--secondary);">
-            <small>Last Payment</small>
-            <h2 id="boxLastPay">₹ 0</h2>
+            <small>Last Action</small>
+            <h2 id="boxLast" style="font-size: 14px;">-</h2>
         </div>
     </div>
 
     <div class="icon-nav no-print">
         <div class="nav-link" onclick="location.href='received_product.html?name='+encodeURIComponent(accName)">
-            <i class="fas fa-download"></i><span>Add Rec.</span>
+            <i class="fas fa-cart-plus"></i><span>Buy</span>
         </div>
         <div class="nav-link" onclick="location.href='sell_product.html?name='+encodeURIComponent(accName)">
-            <i class="fas fa-upload" style="color: var(--primary);"></i><span>Add Sell</span>
+            <i class="fas fa-shipping-fast" style="color: var(--primary);"></i><span>Sell</span>
         </div>
         <div class="nav-link" onclick="location.href='payments.html?name=' + encodeURIComponent(accName)">
-            <i class="fas fa-wallet" style="color: #f59e0b;"></i><span>Payment</span>
+            <i class="fas fa-hand-holding-usd" style="color: #f59e0b;"></i><span>Payment</span>
         </div>
-        <div class="nav-link" onclick="openPrintModal()"><i class="fas fa-print"></i><span>Statement</span></div>
-        <div class="nav-link" onclick="location.reload()"><i class="fas fa-redo"></i><span>Refresh</span></div>
+        <div class="nav-link" onclick="openPrintModal()"><i class="fas fa-file-pdf"></i><span>Print</span></div>
+        <div class="nav-link" onclick="location.reload()"><i class="fas fa-sync"></i><span>Refresh</span></div>
     </div>
 
     <div id="printableArea" class="table-section">
         <div class="table-header">
-            <span>Transaction Ledger - <span id="printAccName"></span></span>
-            <small class="no-print">Updated Live</small>
+            <span>Ledger: <span id="printAccName">User</span></span>
+            <small class="no-print" id="lastUpdated" style="color:#64748b; font-weight:400;"></small>
         </div>
         <div class="table-container">
             <table>
                 <thead>
                     <tr>
                         <th>Date</th>
-                        <th>Type/Product</th>
+                        <th>Type / Description</th>
                         <th>Qty</th>
-                        <th>Amount</th>
-                        <th>Paid</th>
-                        <th>Balance</th>
+                        <th>Debit (₹)</th>
+                        <th>Credit (₹)</th>
+                        <th>Balance (₹)</th>
                         <th class="no-print">Action</th>
                     </tr>
                 </thead>
                 <tbody id="masterTableBody">
-                    <tr><td colspan="7" style="text-align:center">Loading transactions...</td></tr>
+                    <tr><td colspan="7" style="text-align:center; padding:40px;">Fetching transactions...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -123,11 +129,10 @@
 
 <div class="modal" id="printModal">
     <div class="modal-content">
-        <i class="fas fa-print" style="font-size:30px; color:var(--secondary); margin-bottom:10px;"></i>
-        <h3 style="margin-bottom:20px;">Print Statement</h3>
-        <button class="print-btn" style="background: var(--secondary); color: white;" onclick="doPrint('A4')">A4 Paper (Standard)</button>
-        <button class="print-btn" style="background: var(--dark); color: white;" onclick="doPrint('4x6')">4 x 6 (Thermal Bill)</button>
-        <button class="print-btn" style="background: #f1f5f9; color: #64748b;" onclick="closePrintModal()">Close</button>
+        <h3 style="margin-bottom:15px;">Statement Format</h3>
+        <button class="print-btn" style="background: var(--secondary); color: white;" onclick="doPrint('A4')">A4 Standard Print</button>
+        <button class="print-btn" style="background: var(--dark); color: white;" onclick="doPrint('4x6')">4x6 Thermal Receipt</button>
+        <button class="print-btn" style="background: #eee;" onclick="closePrintModal()">Cancel</button>
     </div>
 </div>
 
@@ -135,122 +140,84 @@
     const urlParams = new URLSearchParams(window.location.search);
     const accName = urlParams.get('name');
 
-    async function loadData() {
-        if(!accName) {
-            alert("No account name found!");
-            return;
-        }
-        
+    async function loadTransactionData() {
+        if(!accName) return;
         document.getElementById('accDisplayName').innerText = accName;
         document.getElementById('printAccName').innerText = accName;
 
         try {
-            // Fetching all related data
-            const [recRes, sellRes, payRes] = await Promise.all([
-                supabaseClient.from('received_products').select('*').eq('supplier_name', accName),
-                supabaseClient.from('sell_products').select('*').eq('customer_name', accName),
-                supabaseClient.from('payments').select('*').eq('acc_name', accName)
-            ]);
+            // Fetching from 'transactions' table - ensure your column names match
+            const { data: transactions, error } = await supabaseClient
+                .from('transactions')
+                .select('*')
+                .eq('account_name', accName) // Change column name if different
+                .order('created_at', { ascending: false });
 
-            const recData = recRes.data || [];
-            const sellData = sellRes.data || [];
-            const pays = payRes.data || [];
+            if(error) throw error;
 
-            let totalQty = 0;
-            let totalVal = 0;
-            let totalPaid = 0;
-            let combinedLedger = [];
-
-            // 1. Process Received Products
-            recData.forEach(item => {
-                const qty = parseFloat(item.quantity || 0);
-                const price = parseFloat(item.total_price || 0);
-                totalQty += qty;
-                totalVal += price;
-                combinedLedger.push({
-                    date: item.created_at,
-                    type: 'Buy',
-                    desc: item.product_name,
-                    qty: qty + ' ' + (item.unit || ''),
-                    amt: price,
-                    paid: '-',
-                    bal: '-'
-                });
-            });
-
-            // 2. Process Sell Products
-            sellData.forEach(item => {
-                const qty = parseFloat(item.quantity || 0);
-                const price = parseFloat(item.total_price || 0);
-                totalQty += qty;
-                totalVal += price;
-                combinedLedger.push({
-                    date: item.created_at,
-                    type: 'Sell',
-                    desc: item.product_name,
-                    qty: qty + ' ' + (item.unit || ''),
-                    amt: price,
-                    paid: '-',
-                    bal: '-'
-                });
-            });
-
-            // 3. Process Payments
-            pays.forEach(p => {
-                const amt = parseFloat(p.amount || 0);
-                totalPaid += amt;
-                combinedLedger.push({
-                    date: p.payment_date,
-                    type: 'Payment',
-                    desc: 'Paid via ' + (p.mode || 'Cash'),
-                    qty: '-',
-                    amt: '-',
-                    paid: amt,
-                    bal: p.balance || '-'
-                });
-            });
-
-            // Sort by Date (Newest first)
-            combinedLedger.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            // Render to Table
             const tbody = document.getElementById('masterTableBody');
             tbody.innerHTML = "";
 
-            if (combinedLedger.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No transactions found.</td></tr>';
-            } else {
-                combinedLedger.forEach(row => {
-                    const isPayment = row.type === 'Payment';
-                    tbody.innerHTML += `
-                        <tr style="${isPayment ? 'background:#f0fdf4' : ''}">
-                            <td>${row.date.includes('T') ? row.date.split('T')[0] : row.date}</td>
-                            <td>
-                                ${isPayment ? '<i class="fas fa-check-circle text-green-500"></i>' : 
-                                  `<span class="status-badge ${row.type.toLowerCase()}">${row.type}</span>`} 
-                                <b>${row.desc}</b>
-                            </td>
-                            <td>${row.qty}</td>
-                            <td>${row.amt !== '-' ? '₹' + row.amt : '-'}</td>
-                            <td style="font-weight:bold; color:var(--primary)">${row.paid !== '-' ? '₹' + row.paid : '-'}</td>
-                            <td>${row.bal !== '-' ? '₹' + row.bal : '-'}</td>
-                            <td class="no-print">
-                                <i class="fas fa-trash-alt" style="color:var(--danger); cursor:pointer"></i>
-                            </td>
-                        </tr>`;
-                });
+            let totalQty = 0;
+            let totalDebit = 0; // Money Out / Buying
+            let totalCredit = 0; // Money In / Selling/Payment
+            
+            if (transactions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px;">No records found.</td></tr>';
+                return;
             }
 
-            // Update UI
+            transactions.forEach(trx => {
+                const type = trx.type || 'N/A';
+                const qty = parseFloat(trx.quantity || 0);
+                const amount = parseFloat(trx.amount || 0);
+                const date = trx.date || trx.created_at.split('T')[0];
+
+                totalQty += qty;
+                
+                // Logic based on transaction type
+                let debit = "-", credit = "-";
+                if(type.toLowerCase() === 'buy' || type.toLowerCase() === 'received') {
+                    debit = amount;
+                    totalDebit += amount;
+                } else {
+                    credit = amount;
+                    totalCredit += amount;
+                }
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${date}</td>
+                        <td>
+                            <span class="status-badge badge-${type.toLowerCase()}">${type}</span>
+                            <div style="font-weight:700; margin-top:4px;">${trx.description || trx.product_name || 'N/A'}</div>
+                        </td>
+                        <td>${qty > 0 ? qty : '-'}</td>
+                        <td style="color:var(--danger)">${debit !== "-" ? '₹'+debit : '-'}</td>
+                        <td style="color:var(--primary)">${credit !== "-" ? '₹'+credit : '-'}</td>
+                        <td style="font-weight:700">₹${trx.current_balance || '-'}</td>
+                        <td class="no-print">
+                            <i class="fas fa-ellipsis-v" style="color:#cbd5e1; cursor:pointer"></i>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            // Update Stats
             document.getElementById('boxQty').innerText = totalQty;
-            document.getElementById('boxVal').innerText = "₹ " + totalVal.toLocaleString();
-            document.getElementById('boxDue').innerText = "₹ " + (totalVal - totalPaid).toLocaleString();
-            document.getElementById('boxLastPay').innerText = "₹ " + (pays.length > 0 ? pays[0].amount : 0);
+            document.getElementById('boxVal').innerText = "₹ " + (totalDebit + totalCredit).toLocaleString();
+            document.getElementById('boxDue').innerText = "₹ " + (totalDebit - totalCredit).toLocaleString();
+            document.getElementById('boxLast').innerText = transactions[0].type + " (₹" + transactions[0].amount + ")";
+            document.getElementById('lastUpdated').innerText = "Last sync: " + new Date().toLocaleTimeString();
 
         } catch (err) {
-            console.error("Load Error:", err);
-            document.getElementById('masterTableBody').innerHTML = '<tr><td colspan="7" style="color:red; text-align:center">Error loading data.</td></tr>';
+            console.error(err);
+            document.getElementById('masterTableBody').innerHTML = `<tr><td colspan="7" style="color:red; text-align:center;">Error: ${err.message}</td></tr>`;
         }
+    }
+
+    function toggleDesktop() {
+        document.getElementById('contentContainer').classList.toggle('desktop-mode');
     }
 
     function openPrintModal() { document.getElementById('printModal').style.display = 'flex'; }
@@ -259,25 +226,16 @@
     function doPrint(size) {
         closePrintModal();
         if(size === '4x6') {
-            const thermalStyle = document.createElement('style');
-            thermalStyle.id = "thermal-css";
-            thermalStyle.innerHTML = `
-                @page { size: 4in 6in; margin: 0; }
-                body { width: 4in; padding: 10px; background: white; }
-                .table-section { margin: 0; border: none; }
-                table { font-size: 10px !important; min-width: 100%; }
-                th, td { padding: 5px; }
-                .table-header { font-size: 12px !important; text-align: center; margin-bottom: 10px; }
-            `;
-            document.head.appendChild(thermalStyle);
+            const style = document.createElement('style');
+            style.id = "temp-thermal";
+            style.innerHTML = `@page { size: 4in 6in; margin: 0; } body { width: 4in; padding: 10px; } table { font-size: 9px !important; }`;
+            document.head.appendChild(style);
             window.print();
-            setTimeout(() => document.getElementById('thermal-css').remove(), 1000);
+            setTimeout(() => document.getElementById('temp-thermal').remove(), 1000);
         } else {
             window.print();
         }
     }
 
-    window.onload = loadData;
-</script>
-</body>
-</html>
+    window.onload = loadTransactionData;
+</
