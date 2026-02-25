@@ -44,7 +44,7 @@
     <div onclick="history.back()" style="cursor:pointer"><i class="fas fa-arrow-left"></i></div>
     <div class="user-info">
         <h3 id="accDisplayName">Loading...</h3>
-        <small>Smart Ledger History</small>
+        <small id="authStatus">Checking security...</small>
     </div>
     <i class="fas fa-sync" onclick="loadAllData()" style="cursor:pointer"></i>
 </div>
@@ -78,12 +78,21 @@
     const accName = urlParams.get('name');
 
     async function loadAllData() {
+        // ১. লগইন চেক (Authenticated User Only)
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) {
+            alert("সেশন শেষ! দয়া করে ফোন নম্বর দিয়ে লগইন করুন।");
+            window.location.href = "login.html"; 
+            return;
+        }
+        document.getElementById('authStatus').innerText = "Secured Connection";
+
         if(!accName) return;
         document.getElementById('accDisplayName').innerText = accName;
         const container = document.getElementById('chatContainer');
 
         try {
-            // ১. সকল টেবিল থেকে ডেটা ফেচ করা (আপনার SQL অনুযায়ী)
+            // ২. সকল টেবিল থেকে ডেটা ফেচ করা
             const [payRes, recRes, trxRes] = await Promise.all([
                 supabaseClient.from('payments').select('*').eq('acc_name', accName),
                 supabaseClient.from('received_products').select('*').eq('supplier_name', accName),
@@ -92,7 +101,7 @@
 
             let combinedData = [];
 
-            // ২. Payments টেবিলের ডেটা প্রসেস
+            // ৩. ডেটা প্রসেসিং (Payments)
             if(payRes.data) payRes.data.forEach(d => {
                 combinedData.push({
                     date: d.payment_date || d.created_at,
@@ -100,11 +109,11 @@
                     note: `Mode: ${d.mode || 'Cash'}`,
                     amt: parseFloat(d.amount || 0),
                     balance: d.balance || 0,
-                    flow: 'in' // টাকা ক্যাশে ঢুকেছে
+                    flow: 'in'
                 });
             });
 
-            // ৩. Received Products (Purchase) প্রসেস
+            // ৪. ডেটা প্রসেসিং (Purchase)
             if(recRes.data) recRes.data.forEach(d => {
                 combinedData.push({
                     date: d.created_at,
@@ -112,13 +121,14 @@
                     note: `${d.product_name} (${d.quantity} ${d.unit || ''})`,
                     amt: parseFloat(d.total_price || 0),
                     balance: d.due_amount || 0,
-                    flow: 'out' // পণ্য বাইরে থেকে এসেছে (দেনা বেড়েছে)
+                    flow: 'out'
                 });
             });
 
-            // ৪. Transactions টেবিল প্রসেস
+            // ৫. ডেটা প্রসেসিং (Transactions)
             if(trxRes.data) trxRes.data.forEach(d => {
-                const isSell = d.type && d.type.toLowerCase().includes('sell');
+                const typeLow = (d.type || '').toLowerCase();
+                const isSell = typeLow.includes('sell') || typeLow.includes('out');
                 combinedData.push({
                     date: d.created_at,
                     type: d.type || 'Entry',
@@ -129,7 +139,7 @@
                 });
             });
 
-            // ৫. তারিখ অনুযায়ী সাজানো
+            // ৬. তারিখ অনুযায়ী সাজানো
             combinedData.sort((a, b) => new Date(a.date) - new Date(b.date));
 
             container.innerHTML = "";
@@ -152,7 +162,7 @@
                             <span style="color:#888">Bal: ₹${item.balance}</span>
                         </div>
                         <div style="font-weight:600;">${item.note || '-'}</div>
-                        <span class="amt ${isOut ? 'red' : 'green'}">₹${item.amt}</span>
+                        <span class="amt ${isOut ? 'red' : 'green'}">₹${item.amt.toLocaleString()}</span>
                     </div>
                 `;
             });
