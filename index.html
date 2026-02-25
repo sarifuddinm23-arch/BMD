@@ -3,266 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BMD - Business Manager</title>
+    <title>BMD Management - Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <style>
-        :root {
-            --primary: #f39c12; --secondary: #2980b9; --dark: #1a1a1a;
-            --bg: #f0f2f5; --white: #ffffff; --success: #27ae60; --danger: #e74c3c;
-        }
+        :root { --primary: #10b981; --secondary: #3b82f6; --dark: #0f172a; --bg: #f1f5f9; --white: #ffffff; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; color: var(--dark); }
 
-        body {
-            font-family: 'Segoe UI', Roboto, sans-serif; margin: 0;
-            background-color: var(--bg); display: flex; flex-direction: column;
-            align-items: center; color: #333; transition: 0.3s;
-        }
+        .header { background: var(--dark); color: white; padding: 20px; text-align: center; border-radius: 0 0 25px 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        /* Live View Boxes */
+        .live-dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; padding: 15px; }
+        .stat-card { background: var(--white); padding: 15px; border-radius: 18px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-bottom: 4px solid var(--secondary); }
+        .stat-card small { font-size: 11px; color: #64748b; font-weight: 600; display: block; margin-bottom: 5px; }
+        .stat-card h3 { margin: 0; font-size: 18px; color: var(--dark); }
+        .stat-card.red { border-bottom-color: #ef4444; }
+        .stat-card.green { border-bottom-color: var(--primary); }
 
-        .user-profile {
-            background: white; width: 90%; max-width: 400px; padding: 15px;
-            border-radius: 15px; margin-top: 15px; display: flex; align-items: center; gap: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-        .user-avatar { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
-        .user-info h4 { margin: 0; font-size: 16px; color: var(--dark); }
-        .user-info p { margin: 2px 0; font-size: 11px; color: #666; }
-
-        .top-bar {
-            width: 100%; background: var(--dark); padding: 12px 20px;
+        .section-title { padding: 10px 20px; font-size: 16px; font-weight: 700; color: #475569; display: flex; align-items: center; gap: 10px; }
+        
+        .account-list { padding: 10px 15px; }
+        .acc-item { 
+            background: white; margin-bottom: 12px; padding: 15px; border-radius: 15px; 
             display: flex; justify-content: space-between; align-items: center;
-            box-sizing: border-box; position: sticky; top: 0; z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03); cursor: pointer; transition: 0.2s;
         }
+        .acc-item:hover { transform: scale(1.02); }
+        .acc-info h4 { margin: 0; font-size: 15px; }
+        .acc-info span { font-size: 12px; color: #94a3b8; }
+        .acc-balance { text-align: right; }
+        .acc-balance b { display: block; font-size: 14px; }
+        .acc-balance small { font-size: 10px; color: #64748b; }
 
-        .phone-frame { width: 95%; max-width: 420px; margin-top: 10px; }
-        .desktop-mode { max-width: 1000px !important; }
+        .type-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: #e2e8f0; color: #475569; margin-left: 5px; }
+        .wholesaler-badge { background: #fee2e2; color: #ef4444; }
 
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
-        .stat-card { background: white; padding: 12px; border-radius: 10px; border-left: 5px solid #ddd; }
-        .stat-card.received { border-color: var(--success); }
-        .stat-card.payment { border-color: var(--danger); }
-        .stat-card.balance { border-color: var(--secondary); }
-        .stat-card.due { border-color: var(--primary); }
-        
-        .stat-label { font-size: 12px; font-weight: bold; color: #555; }
-        .stat-value { display: block; font-size: 15px; font-weight: bold; margin-top: 5px; }
-
-        .download-sec { background: white; margin: 10px; padding: 15px; border-radius: 12px; text-align: center; }
-        .date-input { padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 12px; }
-        .btn-download { background: var(--secondary); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-top: 10px; width: 100%; font-weight: bold; }
-
-        .product-list { padding: 10px; }
-        .product-item { background: white; padding: 12px; border-radius: 10px; margin-bottom: 12px; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.05); border: 1px solid #eee; }
-        .product-item h5 { margin: 0 0 8px 0; color: var(--secondary); border-bottom: 1px solid #f0f0f0; padding-bottom: 5px; display: flex; align-items: center; gap: 8px; }
-        .prod-detail { display: grid; grid-template-columns: 1fr 1fr; font-size: 12px; gap: 8px; }
-        .print-btn-sm { position: absolute; top: 10px; right: 10px; background: var(--success); color: white; border: none; padding: 4px 10px; border-radius: 5px; font-size: 10px; cursor: pointer; }
-
-        .payment-box { border-left: 5px solid #9b59b6 !important; }
-
-        #loginOverlay { position: fixed; inset: 0; background: var(--dark); z-index: 9999; display: flex; justify-content: center; align-items: center; }
-        .login-box { background: white; padding: 30px; border-radius: 15px; text-align: center; width: 85%; max-width: 350px; }
-        
-        @media print { .top-bar, .user-profile, .download-sec, .stats-grid { display: none !important; } }
+        .fab { position: fixed; bottom: 20px; right: 20px; background: var(--dark); color: white; width: 56px; height: 56px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div id="loginOverlay">
-        <div class="login-box">
-            <h2 style="margin:0 0 15px 0;">Account Login</h2>
-            <input type="tel" id="loginPhone" placeholder="Registered Mobile Number" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box; font-size: 16px;">
-            <button onclick="handleLogin()" style="width:100%; background:var(--primary); color:white; border:none; padding:12px; margin-top:15px; border-radius:8px; font-weight:bold; cursor:pointer;">VERIFY & LOGIN</button>
-            <p id="errorMsg" style="color:red; font-size:12px; display:none; margin-top:10px;"></p>
-        </div>
-    </div>
+<div class="header">
+    <h2 style="margin:0;">BMD BUSINESS</h2>
+    <p style="margin:5px 0 0; font-size:12px; opacity:0.8;">Live Business Overview</p>
+</div>
 
-    <div class="top-bar" id="navBar" style="display:none;">
-        <button onclick="handleLogout()" style="background:var(--danger); color:white; border:none; padding:5px 12px; border-radius:15px; cursor:pointer;">Logout</button>
-        <button onclick="toggleView()" style="background:rgba(255,255,255,0.1); color:white; border:1px solid grey; padding:5px 12px; border-radius:15px; cursor:pointer;">Desktop View</button>
+<div class="live-dashboard">
+    <div class="stat-card">
+        <small>মোট মাল (Stock Qty)</small>
+        <h3 id="totalQty">0</h3>
     </div>
+    <div class="stat-card">
+        <small>১ ইউনিট মালের মূল্য (Avg)</small>
+        <h3 id="avgPrice">₹ 0</h3>
+    </div>
+    <div class="stat-card">
+        <small>মোট মালের মূল্য (Stock Value)</small>
+        <h3 id="totalStockVal">₹ 0</h3>
+    </div>
+    <div class="stat-card green">
+        <small>মোট টাকা দেওয়া হয়েছে</small>
+        <h3 id="totalPaid">₹ 0</h3>
+    </div>
+    <div class="stat-card red">
+        <small>মোট টাকা বাকি আছে</small>
+        <h3 id="totalDue">₹ 0</h3>
+    </div>
+</div>
 
-    <div class="phone-frame" id="mainFrame" style="display:none;">
+<div class="section-title"><i class="fas fa-truck-loading"></i> WHOLESALERS (যাদের কাছে আমি ঋণী)</div>
+<div id="wholesalerList" class="account-list"></div>
+
+<div class="section-title"><i class="fas fa-users"></i> CUSTOMERS / OTHERS (যারা আমার থেকে কেনে)</div>
+<div id="customerList" class="account-list"></div>
+
+<div class="fab" onclick="window.location.href='add_account.html'"><i class="fas fa-user-plus"></i></div>
+
+<script>
+    async function loadDashboard() {
+        // ১. সব অ্যাকাউন্ট আনা
+        const { data: accounts } = await supabaseClient.from('accounts').select('*');
         
-        <div class="user-profile">
-            <img src="https://via.placeholder.com/60" id="userImg" class="user-avatar">
-            <div class="user-info">
-                <h4 id="userName">Loading...</h4>
-                <p id="userAddr">Address loading...</p>
-                <p id="userMob">Mobile: 0000000000</p>
-            </div>
-        </div>
+        // ২. সব ট্রানজ্যাকশন ও প্রোডাক্ট ডাটা আনা (রিপোর্টের জন্য)
+        const { data: prods } = await supabaseClient.from('received_products').select('quantity, total_price, unit_price');
+        const { data: pays } = await supabaseClient.from('payments').select('amount, status');
 
-        <header><h1 style="text-align: center; font-size: 22px; color: var(--dark);">Business Dashboard</h1></header>
+        // লাইভ ভিউ ক্যালকুলেশন
+        let m_qty = prods?.reduce((s, i) => s + parseFloat(i.quantity || 0), 0) || 0;
+        let m_val = prods?.reduce((s, i) => s + parseFloat(i.total_price || 0), 0) || 0;
+        let avg_p = m_qty > 0 ? (m_val / m_qty) : 0;
+        
+        let t_paid = pays?.filter(p => p.status === 'Payout').reduce((s, i) => s + parseFloat(i.amount || 0), 0) || 0;
+        let t_received = pays?.filter(p => p.status === 'Received').reduce((s, i) => s + parseFloat(i.amount || 0), 0) || 0;
+        let t_due = m_val - t_paid;
 
-        <div class="stats-grid">
-            <div class="stat-card received"><span class="stat-label">মোট জমা (Cash In)</span><span class="stat-value" id="totalReceived">₹ 0.00</span></div>
-            <div class="stat-card payment"><span class="stat-label">মোট খরচ (Cash Out)</span><span class="stat-value" id="totalPayment">₹ 0.00</span></div>
-            <div class="stat-card balance"><span class="stat-label">নিট ক্যাশ হাতে</span><span class="stat-value" id="totalCash">₹ 0.00</span></div>
-            <div class="stat-card due"><span class="stat-label">মোট নিট বাকি</span><span class="stat-value" id="netDue">₹ 0.00</span></div>
-        </div>
+        // ড্যাশবোর্ড আপডেট
+        document.getElementById('totalQty').innerText = m_qty.toLocaleString();
+        document.getElementById('avgPrice').innerText = "₹ " + avg_p.toFixed(2);
+        document.getElementById('totalStockVal').innerText = "₹ " + m_val.toLocaleString();
+        document.getElementById('totalPaid').innerText = "₹ " + t_paid.toLocaleString();
+        document.getElementById('totalDue').innerText = "₹ " + t_due.toLocaleString();
 
-        <div class="download-sec">
-            <h4 style="margin:0 0 10px 0;">Download Report</h4>
-            <div style="display:flex; gap:5px; justify-content:center;">
-                <input type="date" id="startDate" class="date-input">
-                <input type="date" id="endDate" class="date-input">
-            </div>
-            <button class="btn-download" onclick="downloadStatement()"><i class="fas fa-file-pdf"></i> Get PDF Statement</button>
-        </div>
+        // অ্যাকাউন্ট লিস্ট রেন্ডার
+        const wList = document.getElementById('wholesalerList');
+        const cList = document.getElementById('customerList');
+        wList.innerHTML = ""; cList.innerHTML = "";
 
-        <h3 style="padding: 0 15px; font-size: 16px; color: #555;">Live Activity List:</h3>
-        <div class="product-list" id="productContainer"></div>
-
-    </div>
-
-    <script>
-        let currentUser = null;
-
-        window.onload = function() {
-            const savedUser = localStorage.getItem('bmd_user');
-            if (savedUser) {
-                showDashboard(JSON.parse(savedUser));
-            }
-        };
-
-        async function handleLogin() {
-            const phone = document.getElementById('loginPhone').value.trim();
-            if(!phone) return;
-
-            const { data, error } = await supabaseClient.from('accounts').select('*').eq('mobile', phone);
-            
-            if (data && data.length > 0) {
-                const user = data[0];
-                localStorage.setItem('bmd_user', JSON.stringify(user));
-                showDashboard(user);
-            } else {
-                document.getElementById('errorMsg').innerText = "Account not found!";
-                document.getElementById('errorMsg').style.display = 'block';
-            }
-        }
-
-        function handleLogout() {
-            localStorage.removeItem('bmd_user');
-            location.reload();
-        }
-
-        function showDashboard(user) {
-            currentUser = user;
-            document.getElementById('loginOverlay').style.display = 'none';
-            document.getElementById('mainFrame').style.display = 'block';
-            document.getElementById('navBar').style.display = 'flex';
-            
-            document.getElementById('userName').innerText = currentUser.name;
-            document.getElementById('userAddr').innerText = `${currentUser.address}, ${currentUser.pin}, ${currentUser.state}`;
-            document.getElementById('userMob').innerText = "Mobile: " + currentUser.mobile;
-            if(currentUser.image_url) document.getElementById('userImg').src = currentUser.image_url;
-
-            fetchDashboardData();
-        }
-
-        async function fetchDashboardData() {
-            // ১. ক্রয় (received_products) - এখানে আপনি সাপ্লায়ারকে টাকা দিচ্ছেন
-            const { data: buys } = await supabaseClient.from('received_products').select('*').eq('supplier_name', currentUser.name);
-            
-            // ২. বিক্রয় (transactions) - এখানে কাস্টমার আপনাকে টাকা দিচ্ছে
-            const { data: sells } = await supabaseClient.from('transactions').select('*').eq('party_name', currentUser.name);
-            
-            // ৩. পেমেন্ট রেকর্ডস (payments)
-            const { data: pays } = await supabaseClient.from('payments').select('*').eq('acc_name', currentUser.name).order('created_at', { ascending: false });
-
-            let totalIn = 0;   // কত টাকা পেলাম
-            let totalOut = 0;  // কত টাকা দিলাম
-            let totalBillDue = 0; // বিল অনুযায়ী বাকি
-            let combinedHtml = '';
-
-            // বিক্রয় প্রসেস (কাস্টমার থেকে টাকা ইনকাম)
-            sells?.forEach((item) => {
-                totalIn += parseFloat(item.paid_amount || 0);
-                totalBillDue += parseFloat(item.due_amount || 0);
-                combinedHtml += createActivityBox('SELL', item);
-            });
-
-            // ক্রয় প্রসেস (সাপ্লায়ারকে টাকা প্রদান)
-            buys?.forEach((item) => {
-                totalOut += parseFloat(item.paid_amount || 0);
-                totalBillDue += parseFloat(item.due_amount || 0);
-                combinedHtml += createActivityBox('BUY', item);
-            });
-
-            // পেমেন্ট এন্ট্রি প্রসেস
-            pays?.forEach((p) => {
-                const amt = parseFloat(p.amount || 0);
-                if(p.status === 'Received') totalIn += amt;
-                else if(p.status === 'Payout') totalOut += amt;
-
-                combinedHtml += `
-                    <div class="product-item payment-box">
-                        <h5 style="color: #9b59b6;"><i class="fas fa-money-bill-wave"></i> Payment Entry: ${p.status}</h5>
-                        <div class="prod-detail">
-                            <span>Mode: <b>${p.mode}</b></span>
-                            <span>Date: <b>${new Date(p.payment_date).toLocaleDateString()}</b></span>
-                            <span style="grid-column: span 2;">Amount: <b style="font-size:14px; color:${p.status==='Received'?'green':'red'}">₹${amt}</b></span>
-                            <span style="grid-column: span 2; font-style: italic; color: #888;">Current Bal: ₹${p.balance}</span>
+        if (accounts) {
+            accounts.forEach(acc => {
+                const itemHtml = `
+                    <div class="acc-item" onclick="window.location.href='profile.html?name=${encodeURIComponent(acc.name)}'">
+                        <div class="acc-info">
+                            <h4>${acc.name} ${acc.acc_type === 'Wholesaler' ? '<span class="type-badge wholesaler-badge">Wholesaler</span>' : '<span class="type-badge">Customer</span>'}</h4>
+                            <span>ID: ${acc.id.slice(0,8)}</span>
                         </div>
-                    </div>`;
-            });
-
-            document.getElementById('productContainer').innerHTML = combinedHtml || '<p style="text-align:center; color:grey;">No activity found.</p>';
-            
-            // কার্ডে হিসাব প্রদর্শন
-            document.getElementById('totalReceived').innerText = "₹ " + totalIn.toLocaleString('en-IN');
-            document.getElementById('totalPayment').innerText = "₹ " + totalOut.toLocaleString('en-IN');
-            document.getElementById('totalCash').innerText = "₹ " + (totalIn - totalOut).toLocaleString('en-IN');
-            document.getElementById('netDue').innerText = "₹ " + (totalBillDue).toLocaleString('en-IN');
-        }
-
-        function createActivityBox(type, item) {
-            return `
-                <div class="product-item">
-                    <h5><i class="fas fa-box"></i> ${type}: ${item.product_name}</h5>
-                    <button class="print-btn-sm" onclick='printInvoice(${JSON.stringify(item)})'>Print</button>
-                    <div class="prod-detail">
-                        <span>Qty: <b>${item.quantity || 0}</b></span>
-                        <span>Date: <b>${new Date(item.created_at).toLocaleDateString()}</b></span>
-                        <span>Total: <b>₹${item.total_price || 0}</b></span>
-                        <span>Paid: <b style="color:green;">₹${item.paid_amount || 0}</b></span>
-                        <span style="grid-column: span 2;">Due: <b style="color:red;">₹${item.due_amount || 0}</b></span>
+                        <div class="acc-balance">
+                            <b style="color: ${acc.acc_type === 'Wholesaler' ? '#ef4444' : '#10b981'}">₹ ${parseFloat(acc.balance || 0).toFixed(2)}</b>
+                            <small>${acc.acc_type === 'Wholesaler' ? 'আমাকে দিতে হবে' : 'পাওনা'}</small>
+                        </div>
                     </div>
-                </div>`;
-        }
+                `;
 
-        function printInvoice(item) {
-            const printWin = window.open('', '_blank');
-            printWin.document.write(`
-                <html>
-                <head><title>Invoice</title></head>
-                <body style="font-family: sans-serif; padding: 30px; border: 1px solid #eee;">
-                    <h2 style="text-align:center;">BMD BUSINESS INVOICE</h2>
-                    <hr>
-                    <p><strong>Name:</strong> ${currentUser.name}</p>
-                    <p><strong>Date:</strong> ${new Date(item.created_at).toLocaleDateString()}</p>
-                    <table border="1" style="width:100%; border-collapse:collapse; margin-top:20px; text-align:center;">
-                        <tr style="background:#f4f4f4;"><th>Product</th><th>Qty</th><th>Total</th><th>Paid</th><th>Due</th></tr>
-                        <tr><td>${item.product_name}</td><td>${item.quantity}</td><td>₹${item.total_price}</td><td>₹${item.paid_amount}</td><td>₹${item.due_amount}</td></tr>
-                    </table>
-                    <p style="margin-top:30px; text-align:right;">Authorized Signature: ________________</p>
-                </body>
-                </html>
-            `);
-            printWin.document.close();
-            printWin.print();
+                if (acc.acc_type === 'Wholesaler') {
+                    wList.innerHTML += itemHtml;
+                } else {
+                    cList.innerHTML += itemHtml;
+                }
+            });
         }
+    }
 
-        function toggleView() {
-            document.getElementById('mainFrame').classList.toggle('desktop-mode');
-        }
+    window.onload = loadDashboard;
+</script>
 
-        function downloadStatement() {
-            alert("This feature will generate a PDF of all transactions in your selected date range.");
-        }
-    </script>
 </body>
 </html>
