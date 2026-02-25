@@ -97,45 +97,45 @@
         document.getElementById('displayName').innerText = accName;
         document.getElementById('payDate').valueAsDate = new Date();
 
-        // ১. received_products (ক্রয়) থেকে টোটাল আনা
-        const { data: prods } = await supabaseClient.from('received_products').select('total_price').eq('supplier_name', accName);
-        
-        // ২. transactions (বিক্রয়) থেকে টোটাল আনা (যদি party_name কলাম ব্যবহার করেন)
-        const { data: sells } = await supabaseClient.from('transactions').select('total_price').eq('party_name', accName);
+        try {
+            // ১. ক্রয় টেবিল থেকে ডেটা আনা
+            const { data: prods } = await supabaseClient.from('received_products').select('total_price').eq('supplier_name', accName);
+            
+            // ২. বিক্রয় টেবিল থেকে ডেটা আনা
+            const { data: sells } = await supabaseClient.from('transactions').select('total_price').eq('party_name', accName);
 
-        // ৩. payments টেবিল থেকে আগের সব পেমেন্ট আনা
-        const { data: pays } = await supabaseClient.from('payments').select('amount, status').eq('acc_name', accName);
+            // ৩. পেমেন্ট টেবিল থেকে আগের সব জমা-খরচ আনা
+            const { data: pays } = await supabaseClient.from('payments').select('amount, status').eq('acc_name', accName);
 
-        // ক্রয় করা মালের মোট দাম
-        let totalBuy = prods?.reduce((sum, p) => sum + parseFloat(p.total_price || 0), 0) || 0;
-        
-        // বিক্রি করা মালের মোট দাম
-        let totalSell = sells?.reduce((sum, s) => sum + parseFloat(s.total_price || 0), 0) || 0;
+            let totalBuy = prods?.reduce((sum, p) => sum + parseFloat(p.total_price || 0), 0) || 0;
+            let totalSell = sells?.reduce((sum, s) => sum + parseFloat(s.total_price || 0), 0) || 0;
+            
+            // লজিক: Received মানে ডিউ কমাবে (-), Payout মানে আমি দিয়েছি অর্থাৎ আমার পাওনা বা ডিউ সমন্বয় (+)
+            let totalReceived = pays?.filter(p => p.status === 'Received').reduce((sum, p) => sum + parseFloat(p.amount || 0), 0) || 0;
+            let totalPaidOut = pays?.filter(p => p.status === 'Payout').reduce((sum, p) => sum + parseFloat(p.amount || 0), 0) || 0;
 
-        // পেমেন্টের হিসেব (Received মানে আমি পেয়েছি, Payout মানে আমি দিয়েছি)
-        let totalPaidOut = pays?.filter(p => p.status === 'Payout').reduce((sum, p) => sum + parseFloat(p.amount || 0), 0) || 0;
-        let totalReceived = pays?.filter(p => p.status === 'Received').reduce((sum, p) => sum + parseFloat(p.amount || 0), 0) || 0;
+            // কারেন্ট ডিউ লজিক: (মোট ক্রয় + মোট বিক্রয়) - (মোট পেমেন্ট রিসিভ - মোট পেমেন্ট আউট)
+            currentDue = (totalBuy + totalSell) - (totalReceived + totalPaidOut);
 
-        /* লজিক: 
-           যদি কাস্টমার হয় (Sell): ডিউ = totalSell - totalReceived
-           যদি সাপ্লায়ার হয় (Buy): ডিউ = totalBuy - totalPaidOut
-           যেহেতু একই পেজ দুই কাজের জন্য, আমরা সব যোগ-বিয়োগ করে নিট ডিউ বের করছি
-        */
-        currentDue = (totalBuy + totalSell) - (totalPaidOut + totalReceived);
-
-        document.getElementById('currentDueDisplay').innerText = "₹ " + currentDue.toFixed(2);
-        updatePreview();
+            document.getElementById('currentDueDisplay').innerText = "₹ " + currentDue.toFixed(2);
+            updatePreview();
+        } catch (err) {
+            console.error("Initialization Error:", err);
+        }
     }
 
     function updatePreview() {
         const amt = parseFloat(document.getElementById('payAmount').value) || 0;
         const status = document.getElementById('payStatus').value;
         
-        // Received করলে ডিউ কমবে, Payout করলে ডিউ বাড়বে (যদি সাপ্লায়ার এর ক্ষেত্রে হয়)
-        // কাস্টমারের ক্ষেত্রে Received করলে ডিউ কমবে।
+        // Received করলে ডিউ কমবে (-), Payout করলে ব্যালেন্স বাড়বে বা ডিউ বাড়বে (+)
         const newDue = status === 'Received' ? currentDue - amt : currentDue + amt;
         
         document.getElementById('newDueBalance').innerText = "₹ " + newDue.toFixed(2);
+        
+        // কালার চেঞ্জ (যদি পাওনা থাকে লাল, যদি এডভান্স হয়ে যায় সবুজ)
+        const previewEl = document.getElementById('newDueBalance');
+        previewEl.style.color = newDue >= 0 ? "#9f1239" : "#10b981";
     }
 
     document.getElementById('payAmount').addEventListener('input', updatePreview);
@@ -148,7 +148,7 @@
         const mode = document.getElementById('payMode').value;
 
         if(!amt || amt <= 0) {
-            alert("সঠিক অ্যামাউন্ট লিখুন!");
+            alert("দয়া করে সঠিক অ্যামাউন্ট লিখুন!");
             return;
         }
 
@@ -160,25 +160,22 @@
             status: status,
             amount: amt,
             mode: mode,
-            balance: finalDue
+            balance: finalDue // এখানে নতুন আপডেট হওয়া নিট ব্যালেন্স সেভ হবে
         }]);
 
         if(error) {
             alert("Error: " + error.message);
         } else {
-            alert("পেমেন্ট সফলভাবে সেভ হয়েছে!");
-            history.back();
+            alert("পেমেন্ট সফলভাবে সেভ হয়েছে!");
+            // ইন্ডেক্স পেজ রিফ্রেশ করার জন্য back এ পাঠানো হচ্ছে
+            window.location.href = `index.html?name=${encodeURIComponent(accName)}`;
         }
     }
 
+    // ENTER কি চাপলে সেভ হবে
     window.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
-            const activeElement = document.activeElement;
-            if (activeElement.tagName !== 'SELECT' && activeElement.tagName !== 'INPUT') {
-                submitPayment();
-            } else if (activeElement.id === 'payAmount') {
-                 submitPayment();
-            }
+            submitPayment();
         }
     });
 
