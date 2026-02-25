@@ -9,18 +9,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --primary: #10b981; --secondary: #3b82f6; --danger: #ef4444; --dark: #0f172a; --bg: #f1f5f9; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding-bottom: 30px; transition: 0.3s; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding-bottom: 30px; }
         
         .container { max-width: 100%; margin: 0 auto; transition: 0.4s; }
         .desktop-mode { max-width: 1000px !important; margin: 0 auto; padding: 20px; }
 
-        .top-nav { background: var(--dark); color: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .top-nav { background: var(--dark); color: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000; }
         
         .dashboard { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 15px; }
         @media (min-width: 768px) { .dashboard { grid-template-columns: repeat(4, 1fr); } }
         
         .stat-box { background: white; padding: 15px; border-radius: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align: center; border-bottom: 4px solid #cbd5e1; }
-        .stat-box small { font-size: 10px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-box small { font-size: 10px; font-weight: bold; color: #64748b; text-transform: uppercase; }
         .stat-box h2 { margin: 5px 0 0; font-size: 18px; color: var(--dark); font-weight: 900; }
 
         .icon-nav { display: flex; justify-content: space-around; padding: 15px; background: white; margin: 0 15px 15px; border-radius: 16px; gap: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
@@ -32,75 +32,46 @@
         .table-container { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 600px; }
         th, td { padding: 14px 12px; text-align: left; border-bottom: 1px solid #f1f5f9; }
-        th { background: #f8fafc; color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 10px; }
+        th { background: #f8fafc; color: #64748b; font-size: 10px; }
 
         .status-badge { padding: 3px 7px; border-radius: 5px; font-size: 9px; font-weight: 900; text-transform: uppercase; }
-        .badge-buy { background: #fee2e2; color: #ef4444; } 
+        .badge-buy, .badge-received { background: #fee2e2; color: #ef4444; } 
         .badge-sell { background: #dcfce7; color: #10b981; }
         .badge-payment { background: #dbeafe; color: #3b82f6; }
 
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center; padding: 20px; }
         .modal-content { background: white; padding: 25px; border-radius: 24px; width: 100%; max-width: 350px; text-align: center; }
-        .print-btn { display: block; width: 100%; padding: 14px; margin: 10px 0; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; }
-
-        @media print {
-            .no-print { display: none !important; }
-            body { background: white; margin: 0; padding: 0; }
-            .table-section { box-shadow: none; border: 1px solid #eee; margin: 0; border-radius: 0; width: 100%; }
-            table { font-size: 10px; width: 100%; }
-        }
+        .print-btn { display: block; width: 100%; padding: 14px; margin: 10px 0; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body id="mainBody">
 
-<div class="top-nav no-print">
-    <div onclick="history.back()" style="cursor:pointer; width: 30px;"><i class="fas fa-chevron-left"></i></div>
-    <h3 id="accDisplayName" style="margin:0; font-size:16px; flex-grow: 1; text-align: center;">Loading...</h3>
-    <div style="display:flex; gap:15px; width: 60px; justify-content: flex-end;">
+<div class="top-nav">
+    <div onclick="history.back()" style="cursor:pointer;"><i class="fas fa-chevron-left"></i></div>
+    <h3 id="accDisplayName" style="margin:0; font-size:16px;">Loading...</h3>
+    <div style="display:flex; gap:15px;">
         <i class="fas fa-desktop" onclick="document.getElementById('mainBody').classList.toggle('desktop-mode')" style="cursor:pointer"></i>
         <i class="fas fa-sync-alt" onclick="location.reload()" style="cursor:pointer"></i>
     </div>
 </div>
 
 <div class="container" id="contentContainer">
-    <div class="dashboard no-print">
-        <div class="stat-box" style="border-bottom-color: var(--secondary);">
-            <small>Total Qty</small>
-            <h2 id="boxQty">0</h2>
-        </div>
-        <div class="stat-box" style="border-bottom-color: var(--primary);">
-            <small>Total Value</small>
-            <h2 id="boxVal">₹ 0</h2>
-        </div>
-        <div class="stat-box" style="border-bottom-color: var(--danger);">
-            <small>Total Due</small>
-            <h2 id="boxDue" style="color: var(--danger);">₹ 0</h2>
-        </div>
-        <div class="stat-box" style="border-bottom-color: #f59e0b;">
-            <small>Last Paid</small>
-            <h2 id="boxLastPay">₹ 0</h2>
-        </div>
+    <div class="dashboard">
+        <div class="stat-box" style="border-bottom-color: var(--secondary);"><small>Qty</small><h2 id="boxQty">0</h2></div>
+        <div class="stat-box" style="border-bottom-color: var(--primary);"><small>Total</small><h2 id="boxVal">₹ 0</h2></div>
+        <div class="stat-box" style="border-bottom-color: var(--danger);"><small>Due</small><h2 id="boxDue" style="color: var(--danger);">₹ 0</h2></div>
+        <div class="stat-box" style="border-bottom-color: #f59e0b; text-align: center;"><small>Last Payment</small><h2 id="boxLastPay">₹ 0</h2></div>
     </div>
 
-    <div class="icon-nav no-print">
-        <div class="nav-link" onclick="location.href='received_product.html?name='+encodeURIComponent(accName)">
-            <i class="fas fa-plus-circle"></i><span>Add Rec.</span>
-        </div>
-        <div class="nav-link" onclick="location.href='sell_product.html?name='+encodeURIComponent(accName)">
-            <i class="fas fa-cart-arrow-down" style="color: var(--primary);"></i><span>Add Sell</span>
-        </div>
-        <div class="nav-link" onclick="location.href='payments.html?name=' + encodeURIComponent(accName)">
-            <i class="fas fa-wallet" style="color: #f59e0b;"></i><span>Payment</span>
-        </div>
-        <div class="nav-link" onclick="openPrintModal()"><i class="fas fa-print"></i><span>Statement</span></div>
-        <div class="nav-link" onclick="location.reload()"><i class="fas fa-redo"></i><span>Refresh</span></div>
+    <div class="icon-nav">
+        <div class="nav-link" onclick="location.href='received_product.html?name='+encodeURIComponent(accName)"><i class="fas fa-plus-circle"></i><span>Add Rec.</span></div>
+        <div class="nav-link" onclick="location.href='sell_product.html?name='+encodeURIComponent(accName)"><i class="fas fa-cart-arrow-down" style="color: var(--primary);"></i><span>Add Sell</span></div>
+        <div class="nav-link" onclick="location.href='payments.html?name=' + encodeURIComponent(accName)"><i class="fas fa-wallet" style="color: #f59e0b;"></i><span>Payment</span></div>
+        <div class="nav-link" onclick="openPrintModal()"><i class="fas fa-print"></i><span>Print</span></div>
     </div>
 
-    <div id="printableArea" class="table-section">
-        <div class="table-header">
-            <span>Transaction Ledger</span>
-            <span id="printAccName" style="color: var(--secondary);">...</span>
-        </div>
+    <div class="table-section">
+        <div class="table-header"><span>Ledger</span> <span id="printAccName" style="color: var(--secondary);">...</span></div>
         <div class="table-container">
             <table>
                 <thead>
@@ -111,11 +82,10 @@
                         <th>Amount</th>
                         <th>Paid</th>
                         <th>Balance</th>
-                        <th class="no-print">Action</th>
                     </tr>
                 </thead>
                 <tbody id="masterTableBody">
-                    <tr><td colspan="7" style="text-align:center; padding:50px;">Fetching Ledger Data...</td></tr>
+                    <tr><td colspan="6" style="text-align:center; padding:30px;">Loading...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -124,11 +94,9 @@
 
 <div class="modal" id="printModal">
     <div class="modal-content">
-        <i class="fas fa-file-invoice" style="font-size:40px; color:var(--secondary); margin-bottom:15px;"></i>
-        <h3 style="margin-bottom:20px;">Choose Print Format</h3>
-        <button class="print-btn" style="background: var(--secondary); color: white;" onclick="doPrint('A4')">A4 Size (Standard)</button>
-        <button class="print-btn" style="background: var(--dark); color: white;" onclick="doPrint('4x6')">4 x 6 (Thermal Receipt)</button>
-        <button class="print-btn" style="background: #f1f5f9; color: #64748b;" onclick="closePrintModal()">Cancel</button>
+        <h3>Print Format</h3>
+        <button class="print-btn" style="background: var(--secondary); color: white;" onclick="window.print()">A4 Size</button>
+        <button class="print-btn" onclick="closePrintModal()">Close</button>
     </div>
 </div>
 
@@ -142,98 +110,8 @@
         document.getElementById('printAccName').innerText = accName;
 
         try {
-            // Fetch transactions directly from your 'transactions' table
-            // Ensure column name is 'account_name' in Supabase, or change it below
-            const { data: transactions, error } = await supabaseClient
-                .from('transactions') 
+            // আপনার ট্রানজ্যাকশন টেবিল থেকে ডেটা ফেচ করা হচ্ছে
+            const { data, error } = await supabaseClient
+                .from('transactions')
                 .select('*')
-                .eq('account_name', accName)
-                .order('created_at', { ascending: false });
-
-            if(error) throw error;
-
-            const tbody = document.getElementById('masterTableBody');
-            tbody.innerHTML = "";
-
-            let totalQty = 0;
-            let totalAmt = 0;
-            let totalPaid = 0;
-            let lastPayment = 0;
-
-            if (!transactions || transactions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:#64748b;">No records found.</td></tr>';
-                return;
-            }
-
-            transactions.forEach(trx => {
-                const type = (trx.type || 'Other').toLowerCase();
-                const qty = parseFloat(trx.quantity || 0);
-                const amt = parseFloat(trx.total_amount || trx.amount || 0);
-                const paid = parseFloat(trx.paid_amount || 0);
-                const date = trx.date || trx.created_at.split('T')[0];
-
-                totalQty += qty;
-                totalAmt += amt;
-                totalPaid += paid;
-
-                // Track the very first payment found (since we ordered by newest first)
-                if (type.includes('payment') && lastPayment === 0) { lastPayment = paid || amt; }
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${date}</td>
-                        <td>
-                            <span class="status-badge badge-${type}">${trx.type}</span><br>
-                            <span style="font-weight:700; font-size:11px;">${trx.product_name || trx.description || '-'}</span>
-                        </td>
-                        <td>${qty > 0 ? qty : '-'}</td>
-                        <td>${amt > 0 ? '₹' + amt : '-'}</td>
-                        <td style="color:var(--primary); font-weight:700;">${paid > 0 ? '₹' + paid : '-'}</td>
-                        <td style="font-weight:800;">₹${trx.due_balance || trx.balance || 0}</td>
-                        <td class="no-print">
-                            <i class="fas fa-ellipsis-v" style="color:#cbd5e1; cursor:pointer"></i>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            // Update Dashboards
-            document.getElementById('boxQty').innerText = totalQty;
-            document.getElementById('boxVal').innerText = "₹ " + totalAmt.toLocaleString();
-            document.getElementById('boxDue').innerText = "₹ " + (totalAmt - totalPaid).toLocaleString();
-            document.getElementById('boxLastPay').innerText = "₹ " + lastPayment.toLocaleString();
-
-        } catch (err) {
-            console.error("Data Load Error:", err);
-            document.getElementById('masterTableBody').innerHTML = `<tr><td colspan="7" style="color:red; text-align:center;">Error loading database.</td></tr>`;
-        }
-    }
-
-    function openPrintModal() { document.getElementById('printModal').style.display = 'flex'; }
-    function closePrintModal() { document.getElementById('printModal').style.display = 'none'; }
-
-    function doPrint(size) {
-        closePrintModal();
-        if(size === '4x6') {
-            const thermalStyle = document.createElement('style');
-            thermalStyle.id = "thermal-css";
-            thermalStyle.innerHTML = `
-                @page { size: 4in 6in; margin: 0; }
-                body { width: 4in; padding: 10px; background: white; }
-                .table-section { margin: 0; border: none; }
-                table { font-size: 9px !important; min-width: 100%; }
-                th, td { padding: 4px; }
-                .table-header { font-size: 12px !important; text-align: center; }
-            `;
-            document.head.appendChild(thermalStyle);
-            window.print();
-            setTimeout(() => document.getElementById('thermal-css').remove(), 1000);
-        } else {
-            window.print();
-        }
-    }
-
-    window.onload = loadData;
-</script>
-</body>
-</html>
+                .or(`account_name.eq."${accName}",acc_name.eq
