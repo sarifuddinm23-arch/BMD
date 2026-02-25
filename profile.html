@@ -9,106 +9,128 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --primary: #10b981; --secondary: #3b82f6; --danger: #ef4444; --dark: #0f172a; --bg: #f8fafc; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding-bottom: 30px; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding-bottom: 30px; transition: 0.3s; }
         
+        /* Layout Modes */
+        .container { max-width: 100%; margin: 0 auto; transition: 0.4s; }
+        @media (min-width: 1024px) { .desktop-mode { max-width: 1100px !important; } }
+
         .top-nav { background: var(--dark); color: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000; }
         
-        .dashboard { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 15px; }
+        /* Top Dashboard - 4 Boxes */
+        .dashboard { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 15px; }
+        @media (min-width: 768px) { .dashboard { grid-template-columns: repeat(4, 1fr); } }
+        
         .stat-box { background: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; border-bottom: 4px solid #e2e8f0; }
-        .stat-box.full { grid-column: span 2; border-bottom-color: var(--danger); }
-        .stat-box h2 { margin: 8px 0 2px; font-size: 20px; color: #1e293b; }
+        .stat-box small { font-size: 10px; font-weight: bold; color: #64748b; text-transform: uppercase; }
+        .stat-box h2 { margin: 5px 0 0; font-size: 18px; color: var(--dark); font-weight: 800; }
 
-        .icon-nav { display: flex; justify-content: space-around; flex-wrap: wrap; padding: 15px; background: white; margin: 0 15px 15px; border-radius: 16px; gap: 10px; }
-        .nav-link { text-align: center; color: var(--dark); text-decoration: none; font-size: 11px; font-weight: 600; min-width: 60px; cursor: pointer; }
-        .nav-link i { font-size: 20px; display: block; margin-bottom: 5px; color: var(--secondary); }
+        .icon-nav { display: flex; justify-content: space-around; padding: 15px; background: white; margin: 0 15px 15px; border-radius: 16px; gap: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .nav-link { text-align: center; color: var(--dark); text-decoration: none; font-size: 10px; font-weight: 700; cursor: pointer; flex: 1; }
+        .nav-link i { font-size: 18px; display: block; margin-bottom: 4px; color: var(--secondary); }
 
-        .table-section { background: white; margin: 0 15px; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .table-header { padding: 15px; background: #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+        /* Table & Ledger */
+        .table-section { background: white; margin: 0 15px; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .table-header { padding: 15px; background: #f1f5f9; display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 14px; }
         .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 700px; }
-        th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #f1f5f9; }
-        th { background: #f8fafc; color: #64748b; text-transform: uppercase; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 600px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+        th { background: #f8fafc; color: #64748b; }
 
-        .action-icons { display: flex; gap: 8px; }
-        .action-icons i { cursor: pointer; font-size: 15px; padding: 5px; border-radius: 5px; transition: 0.2s; }
-        .fa-eye { color: var(--primary); background: #dcfce7; }
-        .fa-edit { color: var(--secondary); background: #dbeafe; }
-        .fa-trash { color: var(--danger); background: #fee2e2; }
-        .fa-print { color: #64748b; background: #f1f5f9; }
+        .status-badge { padding: 2px 8px; border-radius: 5px; font-size: 10px; font-weight: bold; }
+        .buy { background: #fee2e2; color: #ef4444; }
+        .sell { background: #dcfce7; color: #10b981; }
 
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; }
-        .modal-content { background: white; padding: 20px; border-radius: 15px; width: 300px; text-align: center; }
-        .print-btn { display: block; width: 100%; padding: 10px; margin: 10px 0; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        /* Print Modal */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 320px; text-align: center; }
+        .print-btn { display: block; width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
 
         /* PRINT STYLES */
         @media print {
             .no-print { display: none !important; }
-            body { background: white; }
-            .table-section { box-shadow: none; margin: 0; }
-            table { min-width: 100%; }
-        }
-        /* Thermal 4x6 Specific */
-        @media print {
-            .print-4x6 { width: 4in; padding: 5px; }
-            .print-4x6 table { font-size: 10px; }
+            body { background: white; padding: 0; margin: 0; }
+            .table-section { box-shadow: none; border: 1px solid #eee; margin: 0; width: 100%; }
+            table { font-size: 10px; }
         }
     </style>
 </head>
-<body>
+<body id="mainBody">
 
 <div class="top-nav no-print">
     <div onclick="history.back()"><i class="fas fa-arrow-left"></i></div>
-    <h3 id="accDisplayName">Loading Profile...</h3>
-    <i class="fas fa-sync-alt" onclick="location.reload()"></i>
+    <h3 id="accDisplayName" style="margin:0; font-size:16px;">Loading...</h3>
+    <div style="display:flex; gap:15px;">
+        <i class="fas fa-desktop" onclick="document.getElementById('mainBody').classList.toggle('desktop-mode')"></i>
+        <i class="fas fa-sync-alt" onclick="location.reload()"></i>
+    </div>
 </div>
 
-<div class="dashboard no-print">
-    <div class="stat-box full">
-        <small>Total Due Balance</small>
-        <h2 id="boxDue" style="color: var(--danger);">₹ 0.00</h2>
+<div class="container" id="contentContainer">
+    <div class="dashboard no-print">
+        <div class="stat-box">
+            <small>Total Qty (Rec/Sell)</small>
+            <h2 id="boxQty">0</h2>
+        </div>
+        <div class="stat-box">
+            <small>Total Price</small>
+            <h2 id="boxVal">₹ 0</h2>
+        </div>
+        <div class="stat-box" style="border-bottom-color: var(--danger);">
+            <small>Due Balance</small>
+            <h2 id="boxDue" style="color: var(--danger);">₹ 0</h2>
+        </div>
+        <div class="stat-box" style="border-bottom-color: var(--secondary);">
+            <small>Last Payment</small>
+            <h2 id="boxLastPay">₹ 0</h2>
+        </div>
     </div>
-    <div class="stat-box"><small>Total Products</small><h2 id="boxQty">0</h2></div>
-    <div class="stat-box"><small>Total Value</small><h2 id="boxVal">₹ 0</h2></div>
-</div>
 
-<div class="icon-nav no-print">
-    <a href="received_product.html" class="nav-link"><i class="fas fa-plus-circle"></i><span>Add Rec.</span></a>
-    <a href="sell_product.html" class="nav-link"><i class="fas fa-shopping-cart"></i><span>Add Sell</span></a>
-    <div class="nav-link" onclick="location.href='payments.html?name=' + encodeURIComponent(accName)">
-        <i class="fas fa-wallet"></i><span>Payment</span>
+    <div class="icon-nav no-print">
+        <div class="nav-link" onclick="location.href='received_product.html?name='+encodeURIComponent(accName)">
+            <i class="fas fa-download"></i><span>Add Rec.</span>
+        </div>
+        <div class="nav-link" onclick="location.href='sell_product.html?name='+encodeURIComponent(accName)">
+            <i class="fas fa-upload" style="color: var(--primary);"></i><span>Add Sell</span>
+        </div>
+        <div class="nav-link" onclick="location.href='payments.html?name=' + encodeURIComponent(accName)">
+            <i class="fas fa-wallet" style="color: #f59e0b;"></i><span>Payment</span>
+        </div>
+        <div class="nav-link" onclick="openPrintModal()"><i class="fas fa-print"></i><span>Statement</span></div>
+        <div class="nav-link" onclick="location.reload()"><i class="fas fa-redo"></i><span>Refresh</span></div>
     </div>
-    <div class="nav-link" onclick="openPrintModal('all')"><i class="fas fa-file-invoice"></i><span>Statement</span></div>
-    <div class="nav-link" onclick="location.reload()"><i class="fas fa-sync-alt"></i><span>Refresh</span></div>
-</div>
 
-<div id="printableArea" class="table-section">
-    <div class="table-header no-print">
-        <span>Product & Payment Ledger</span>
-        <i class="fas fa-filter" style="color: var(--secondary)"></i>
-    </div>
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Status/Product</th>
-                    <th>Total Amt</th>
-                    <th>Paid</th>
-                    <th>Due</th>
-                    <th class="no-print">Action</th>
-                </tr>
-            </thead>
-            <tbody id="masterTableBody"></tbody>
-        </table>
+    <div id="printableArea" class="table-section">
+        <div class="table-header">
+            <span>Transaction Ledger - <span id="printAccName"></span></span>
+            <small class="no-print">Updated Live</small>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Product / Status</th>
+                        <th>Qty</th>
+                        <th>Total Amt</th>
+                        <th>Paid</th>
+                        <th>Balance</th>
+                        <th class="no-print">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="masterTableBody"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <div class="modal" id="printModal">
     <div class="modal-content">
-        <h3>Select Print Size</h3>
-        <button class="print-btn" style="background: var(--secondary); color: white;" onclick="doPrint('A4')">A4 Size (Standard)</button>
-        <button class="print-btn" style="background: var(--primary); color: white;" onclick="doPrint('4x6')">4 x 6 Size (Thermal)</button>
-        <button class="print-btn" style="background: #ccc;" onclick="closePrintModal()">Cancel</button>
+        <i class="fas fa-print" style="font-size:30px; color:var(--secondary); margin-bottom:10px;"></i>
+        <h3 style="margin-bottom:20px;">Print Statement</h3>
+        <button class="print-btn" style="background: var(--secondary); color: white;" onclick="doPrint('A4')">A4 Paper (Standard)</button>
+        <button class="print-btn" style="background: var(--dark); color: white;" onclick="doPrint('4x6')">4 x 6 (Thermal Bill)</button>
+        <button class="print-btn" style="background: #f1f5f9; color: #64748b;" onclick="closePrintModal()">Close</button>
     </div>
 </div>
 
@@ -119,94 +141,98 @@
     async function loadData() {
         if(!accName) return;
         document.getElementById('accDisplayName').innerText = accName;
+        document.getElementById('printAccName').innerText = accName;
 
-        const { data: prods } = await supabaseClient.from('received_products').select('*').eq('supplier_name', accName).order('created_at', {ascending: false});
+        // Fetch Data from 3 tables: Received, Sell, and Payments
+        const { data: recData } = await supabaseClient.from('received_products').select('*').eq('supplier_name', accName);
+        const { data: sellData } = await supabaseClient.from('sell_products').select('*').eq('customer_name', accName);
         const { data: pays } = await supabaseClient.from('payments').select('*').eq('acc_name', accName).order('payment_date', {ascending: false});
 
         const tbody = document.getElementById('masterTableBody');
         tbody.innerHTML = "";
-        let tVal = 0, tPaid = 0;
+        
+        let totalQty = 0;
+        let totalVal = 0;
+        let totalPaid = 0;
+        let combinedLedger = [];
 
-        // Products Ledger
-        prods?.forEach(p => {
-            tVal += parseFloat(p.total_price || 0);
-            tbody.innerHTML += `
-                <tr>
-                    <td>${p.created_at.split('T')[0]}</td>
-                    <td><b>${p.product_name}</b></td>
-                    <td>₹${p.total_price}</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td class="action-icons no-print">
-                        <i class="fas fa-eye"></i>
-                        <i class="fas fa-edit"></i>
-                        <i class="fas fa-trash" onclick="deleteRecord('received_products', '${p.id}')"></i>
-                        <i class="fas fa-print" onclick="openPrintModal('${p.id}')"></i>
-                    </td>
-                </tr>`;
+        // 1. Process Received Products
+        recData?.forEach(item => {
+            totalQty += parseFloat(item.quantity || 0);
+            totalVal += parseFloat(item.total_price || 0);
+            combinedLedger.push({...item, type: 'Buy', date: item.created_at});
         });
 
-        // Payments Ledger
+        // 2. Process Sell Products (Fix: Now added to calculation)
+        sellData?.forEach(item => {
+            totalQty += parseFloat(item.quantity || 0);
+            totalVal += parseFloat(item.total_price || 0);
+            combinedLedger.push({...item, type: 'Sell', date: item.created_at});
+        });
+
+        // 3. Process Payments
         pays?.forEach(p => {
-            tPaid += (p.status === 'Received' ? parseFloat(p.amount) : -parseFloat(p.amount));
-            tbody.innerHTML += `
-                <tr style="background:#f0f9ff">
-                    <td>${p.payment_date}</td>
-                    <td><span style="color:${p.status==='Received'?'green':'red'}">${p.status}</span> (${p.mode})</td>
-                    <td>-</td>
-                    <td style="font-weight:bold">₹${p.amount}</td>
-                    <td>₹${p.balance || '-'}</td>
-                    <td class="action-icons no-print">
-                        <i class="fas fa-edit"></i>
-                        <i class="fas fa-trash" onclick="deleteRecord('payments', '${p.id}')"></i>
-                        <i class="fas fa-print"></i>
-                    </td>
-                </tr>`;
+            totalPaid += parseFloat(p.amount || 0);
+            combinedLedger.push({...p, type: 'Payment', date: p.payment_date});
         });
 
-        document.getElementById('boxDue').innerText = "₹ " + (tVal - tPaid).toFixed(2);
-        document.getElementById('boxQty').innerText = prods?.length || 0;
-        document.getElementById('boxVal').innerText = "₹ " + tVal.toFixed(2);
-    }
+        // Sort by date
+        combinedLedger.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    // DELETE FUNCTION
-    async function deleteRecord(table, id) {
-        if(confirm("Are you sure you want to delete this record? This cannot be undone.")) {
-            const { error } = await supabaseClient.from(table).delete().eq('id', id);
-            if(error) {
-                alert("Error deleting: " + error.message);
+        // Render Table
+        combinedLedger.forEach(row => {
+            let rowHtml = '';
+            if(row.type === 'Buy' || row.type === 'Sell') {
+                rowHtml = `
+                    <tr>
+                        <td>${row.date.split('T')[0]}</td>
+                        <td><span class="status-badge ${row.type.toLowerCase()}">${row.type}</span> <b>${row.product_name}</b></td>
+                        <td>${row.quantity} ${row.unit || ''}</td>
+                        <td>₹${row.total_price}</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td class="no-print"><i class="fas fa-trash" style="color:var(--danger)"></i></td>
+                    </tr>`;
             } else {
-                alert("Record deleted successfully!");
-                loadData(); // Refresh UI
+                rowHtml = `
+                    <tr style="background:#f0fdf4">
+                        <td>${row.date}</td>
+                        <td><i class="fas fa-check-circle" style="color:var(--primary)"></i> <b>Payment (${row.mode})</b></td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td style="font-weight:800; color:var(--primary)">₹${row.amount}</td>
+                        <td>₹${row.balance || ''}</td>
+                        <td class="no-print"><i class="fas fa-print"></i></td>
+                    </tr>`;
             }
-        }
+            tbody.innerHTML += rowHtml;
+        });
+
+        // Update Dashboard Boxes
+        document.getElementById('boxQty').innerText = totalQty;
+        document.getElementById('boxVal').innerText = "₹ " + totalVal.toLocaleString();
+        document.getElementById('boxDue').innerText = "₹ " + (totalVal - totalPaid).toLocaleString();
+        document.getElementById('boxLastPay').innerText = "₹ " + (pays && pays[0] ? pays[0].amount : 0);
     }
 
-    function openPrintModal(id) {
-        document.getElementById('printModal').style.display = 'flex';
-    }
-
-    function closePrintModal() {
-        document.getElementById('printModal').style.display = 'none';
-    }
+    // Print Logic
+    function openPrintModal() { document.getElementById('printModal').style.display = 'flex'; }
+    function closePrintModal() { document.getElementById('printModal').style.display = 'none'; }
 
     function doPrint(size) {
         closePrintModal();
-        const printArea = document.getElementById('printableArea');
-        
         if(size === '4x6') {
-            const style = document.createElement('style');
-            style.id = "thermalStyle";
-            style.innerHTML = `
-                @page { size: 4in 6in; margin: 5mm; }
-                body { width: 4in; }
-                table { font-size: 10px !important; }
-                .table-header { color: black !important; }
+            const thermalStyle = document.createElement('style');
+            thermalStyle.id = "thermal-css";
+            thermalStyle.innerHTML = `
+                @page { size: 4in 6in; margin: 0; }
+                body { width: 4in; padding: 10px; }
+                table { font-size: 9px !important; }
+                .table-header { font-size: 12px !important; text-align: center; }
             `;
-            document.head.appendChild(style);
+            document.head.appendChild(thermalStyle);
             window.print();
-            // Remove style after print to keep UI normal
-            setTimeout(() => document.getElementById('thermalStyle').remove(), 1000);
+            setTimeout(() => document.getElementById('thermal-css').remove(), 1000);
         } else {
             window.print();
         }
